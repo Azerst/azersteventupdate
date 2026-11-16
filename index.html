@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Azerst — Free Fire Event Tracker. Giao diện hiện đại, phong cách gaming." />
+  <meta name="theme-color" content="#d93828" />
   <title>Azerst — Events</title>
 
   <link rel="stylesheet" href="css/style.css" />
@@ -42,7 +44,7 @@
         <div class="num">01</div>
         <div>
           <h2>Events</h2>
-          <p>Giao diện đã sẵn sàng — chờ API</p>
+          <p id="subtitle">Giao diện đã sẵn sàng — chờ API</p>
         </div>
       </div>
 
@@ -58,8 +60,12 @@
         <div class="stat-line" id="statLine">—</div>
       </div>
 
-      <!-- TODO: sau này render từ API vào đây -->
-      <section id="eventsWrap"></section>
+      <!-- Skeleton có sẵn để tránh flash trống -->
+      <section id="eventsWrap" aria-live="polite" aria-busy="true">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </section>
 
     </div>
   </main>
