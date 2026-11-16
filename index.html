@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Azerst — Events</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/loader.css" />
+</head>
+<body>
+
+  <!-- LOADER -->
+  <div id="loader" aria-hidden="true">
+    <div class="loader-inner">
+      <div class="loader-emblem"><div class="loader-avatar">A</div></div>
+      <div class="loader-name">AZERST</div>
+      <div class="loader-sub">Events Hub</div>
+      <div class="loader-bar"><div class="loader-bar-fill" id="barFill"></div></div>
+      <div class="loader-percent" id="barPct">0%</div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="card-wrapper">
+      <article class="profile-card">
+        <div class="status-chip"><span class="status-dot"></span> LIVE</div>
+        <div class="hero-section">
+          <h1 class="name">AZERST</h1>
+          <div class="handle">FREE FIRE · EVENT TRACKER</div>
+        </div>
+      </article>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="content">
+    <div class="content-inner">
+
+      <div class="section-head">
+        <div class="num">01</div>
+        <div>
+          <h2>Events</h2>
+          <p>Giao diện đã sẵn sàng — chờ API</p>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn-refresh" id="btnRefresh" type="button">↻ Tải lại</button>
+        <select class="region-select" id="regionSelect">
+          <option value="VN" selected>VN</option>
+          <option value="ID">ID</option>
+          <option value="TH">TH</option>
+          <option value="BR">BR</option>
+          <option value="SG">SG</option>
+        </select>
+        <div class="stat-line" id="statLine">—</div>
+      </div>
+
+      <!-- TODO: sau này render từ API vào đây -->
+      <section id="eventsWrap"></section>
+
+    </div>
+  </main>
+
+  <script src="js/loader.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
