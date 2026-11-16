@@ -1,12 +1,16 @@
-/* Loader — hiển thị và đóng */
+/* Loader — hiển thị & đóng, idempotent (gọi nhiều lần OK) */
 window.Loader = (function () {
-  let interval, hidden = false;
+  let interval = null;
+  let hidden = false;
 
   function start() {
+    if (hidden) return;
+
     const fill = document.getElementById('barFill');
     const pct  = document.getElementById('barPct');
+    if (!fill || !pct) return;
+
     document.documentElement.classList.add('loading');
-    document.body.classList.add('expanded');
 
     let p = 0;
     interval = setInterval(() => {
@@ -21,14 +25,18 @@ window.Loader = (function () {
     hidden = true;
 
     const loader = document.getElementById('loader');
-    clearInterval(interval);
-    document.getElementById('barFill').style.width = '100%';
-    document.getElementById('barPct').textContent = '100%';
+    const fill = document.getElementById('barFill');
+    const pct  = document.getElementById('barPct');
+
+    if (interval) { clearInterval(interval); interval = null; }
+    if (fill) fill.style.width = '100%';
+    if (pct)  pct.textContent = '100%';
+
+    document.documentElement.classList.remove('loading');
 
     setTimeout(() => {
-      loader.classList.add('hide');
-      document.documentElement.classList.remove('loading');
-      setTimeout(() => loader.remove(), 900);
+      if (loader) loader.classList.add('hide');
+      setTimeout(() => { if (loader) loader.remove(); }, 900);
     }, 300);
   }
 
