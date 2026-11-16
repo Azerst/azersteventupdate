@@ -1,4 +1,4 @@
- /* UI — render HTML */
+/* UI — render HTML */
 window.UI = (function () {
   const $ = (s) => document.querySelector(s);
 
@@ -6,8 +6,15 @@ window.UI = (function () {
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 
+  function setBusy(busy) {
+    const wrap = $('#eventsWrap');
+    if (wrap) wrap.setAttribute('aria-busy', busy ? 'true' : 'false');
+  }
+
   function renderSkeletons(n = 3) {
     const wrap = $('#eventsWrap');
+    if (!wrap) return;
+    setBusy(true);
     wrap.innerHTML = '';
     for (let i = 0; i < n; i++) {
       const el = document.createElement('div');
@@ -18,24 +25,33 @@ window.UI = (function () {
   }
 
   function renderEmpty(msg = 'Chưa có dữ liệu sự kiện.') {
-    $('#eventsWrap').innerHTML = `<div class="empty">${escapeHtml(msg)}</div>`;
+    const wrap = $('#eventsWrap');
+    if (!wrap) return;
+    setBusy(false);
+    wrap.innerHTML = `<div class="empty">${escapeHtml(msg)}</div>`;
     $('#statLine').innerHTML = `<strong>0</strong> sự kiện`;
   }
 
   function renderError(err) {
-    $('#eventsWrap').innerHTML = `
+    const wrap = $('#eventsWrap');
+    if (!wrap) return;
+    setBusy(false);
+    wrap.innerHTML = `
       <div class="error-box">
         Không thể tải sự kiện.<br>
         <small>${escapeHtml(err?.message || String(err))}</small>
       </div>`;
-    $('#statLine').innerHTML = '<strong>Lỗi</strong>';
+    $('#statLine').innerHTML = '<strong>Lỗi</strong> kết nối';
   }
 
   /* Dùng khi có API: items = [{title, desc, img, tag, start, end, statusClass, statusLabel}] */
   function renderEvents(items, region) {
+    const wrap = $('#eventsWrap');
+    if (!wrap) return;
     if (!items?.length) return renderEmpty();
+    setBusy(false);
 
-    $('#eventsWrap').innerHTML = items.map((it, idx) => {
+    wrap.innerHTML = items.map((it, idx) => {
       const timeLine = (it.start || it.end)
         ? `<div class="event-time"><span>${it.start || '—'}</span><span>${it.end || '—'}</span></div>`
         : '';
