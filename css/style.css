@@ -200,12 +200,12 @@ button:focus-visible,
   line-height:1.15;
   margin-bottom:6px;
 
-  /* Chỉ dùng Trắng và Đỏ */
+  /* Chỉ dùng Trắng và Đỏ tươi sáng, không có tone đỏ sẫm/đen */
   background-image:
-    radial-gradient(circle at var(--ax) var(--ay), #ffffff 0%, rgba(255,255,255,0) 45%),
-    radial-gradient(circle at var(--bx) var(--by), #ff3333 0%, rgba(255,51,51,0) 50%),
-    radial-gradient(circle at var(--cx) var(--cy), #ff6666 0%, rgba(255,102,102,0) 55%),
-    linear-gradient(135deg, #e60000 0%, #990000 100%);
+    radial-gradient(circle at var(--ax) var(--ay), #ffffff 0%, rgba(255,255,255,0) 50%),
+    radial-gradient(circle at var(--bx) var(--by), #ff4d4d 0%, rgba(255,77,77,0) 60%),
+    radial-gradient(circle at var(--cx) var(--cy), #ff0000 0%, rgba(255,0,0,0) 70%),
+    linear-gradient(135deg, #ff1a1a 0%, #e60000 100%);
 
   background-size:100% 100%;
   background-repeat:no-repeat;
@@ -215,13 +215,13 @@ button:focus-visible,
   -webkit-text-fill-color:transparent;
           color:transparent;
 
-  /* Bóng đen nhẹ phía sau + viền sáng trắng bảo vệ màu chữ */
+  /* Bóng đổ mềm mại + viền sáng trắng */
   filter: 
-    drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4))
+    drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35))
     drop-shadow(0 0 2px rgba(255, 255, 255, 0.9));
 
-  /* Loang chậm 40s */
-  animation:nameFlare 40s ease-in-out infinite;
+  /* Loang 25s (chậm vừa phải) */
+  animation:nameFlare 25s ease-in-out infinite;
 }
 
 /* Loang ngẫu nhiên từ mọi phía */
@@ -263,29 +263,57 @@ button:focus-visible,
   z-index:20;
 }
 
+/* Nút Tải lại được thiết kế lại */
 .btn-refresh{
   display:inline-flex;
   align-items:center;
+  justify-content:center;
   gap:8px;
-  padding:11px 18px;
-  background:linear-gradient(100deg, rgba(217,56,40,.94), rgba(255,90,70,.9));
+  padding:10px 20px;
+  background:linear-gradient(135deg, #ff4d4d, #d93828);
   color:#fff;
   border:none;
   font-family:var(--font-heading);
   font-weight:700;
   font-size:12px;
-  letter-spacing:1.5px;
+  letter-spacing:1.2px;
   text-transform:uppercase;
-  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
-  transition:transform .25s, filter .25s;
+  border-radius:8px; /* Bo góc hiện đại */
+  box-shadow:0 4px 15px rgba(217, 56, 40, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition:all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position:relative;
+  overflow:hidden;
+}
+/* Hiệu ứng ánh sáng lướt qua */
+.btn-refresh::after{
+  content:"";
+  position:absolute;
+  top:0; left:-100%;
+  width:50%; height:100%;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform:skewX(-20deg);
+  transition:left 0.5s;
 }
 .btn-refresh .ico{
   display:inline-block;
   transition:transform .4s cubic-bezier(.2,.8,.2,1);
 }
-.btn-refresh:hover{ transform:translateY(-2px); filter:brightness(1.06); }
+.btn-refresh:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 20px rgba(217, 56, 40, 0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.btn-refresh:hover::after{ left:150%; }
 .btn-refresh:hover .ico{ transform:rotate(180deg); }
-.btn-refresh:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+.btn-refresh:active{
+  transform:translateY(1px);
+  box-shadow:0 2px 10px rgba(217, 56, 40, 0.4);
+}
+.btn-refresh:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
 
 /* ============ DROPDOWN ============ */
 .region-dropdown{
