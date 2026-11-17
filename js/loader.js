@@ -13,12 +13,13 @@ window.Loader = (function () {
     document.documentElement.classList.add('loading');
 
     let p = 0;
-    // Tăng tốc độ chạy thanh Loader: 120ms, tăng 3.5%
+    // Tăng tốc độ chạy thanh Loader: 80ms, tăng 4-8%
+    // Thanh bar sẽ đạt 90% trong khoảng 1.5s - 1.8s
     interval = setInterval(() => {
-      p = Math.min(90, p + Math.random() * 3.5); 
+      p = Math.min(90, p + Math.random() * 8); 
       fill.style.width = p + '%';
       pct.textContent = Math.floor(p) + '%';
-    }, 120);
+    }, 80);
   }
 
   function hide() {
