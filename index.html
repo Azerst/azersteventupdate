@@ -7,6 +7,9 @@
   <meta name="theme-color" content="#d93828" />
   <title>Azerst — Events</title>
 
+  <link rel="preload" as="image"
+        href="https://azerst-image-vn.vercel.app/images/AVATA_AZERST.png" />
+
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/loader.css" />
 </head>
@@ -15,7 +18,12 @@
   <!-- LOADER -->
   <div id="loader" aria-hidden="true">
     <div class="loader-inner">
-      <div class="loader-emblem"><div class="loader-avatar">A</div></div>
+      <div class="loader-emblem">
+        <div class="loader-avatar">
+          <img src="https://azerst-image-vn.vercel.app/images/AVATA_AZERST.png"
+               alt="Azerst" loading="eager" decoding="async" />
+        </div>
+      </div>
       <div class="loader-name">AZERST</div>
       <div class="loader-sub">Events Hub</div>
       <div class="loader-bar"><div class="loader-bar-fill" id="barFill"></div></div>
@@ -39,13 +47,11 @@
   <main class="content">
     <div class="content-inner">
 
-      <!-- Toolbar -->
       <div class="toolbar">
         <button class="btn-refresh" id="btnRefresh" type="button">
           <span class="ico">↻</span> Tải lại
         </button>
 
-        <!-- Custom dropdown server -->
         <div class="region-dropdown" id="regionDropdown">
           <button class="region-btn" id="regionBtn" type="button"
                   aria-haspopup="listbox" aria-expanded="false">
@@ -85,7 +91,6 @@
     </div>
   </main>
 
-  <!-- Toast -->
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="js/loader.js"></script>
