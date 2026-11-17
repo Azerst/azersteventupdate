@@ -57,27 +57,30 @@
     regionBtn.setAttribute('aria-expanded', 'false');
   }
 
-  function selectRegion(value, label) {
-    if (value === currentRegion) {
+  function selectRegion(code, label) {
+    if (code === currentRegion) {
       closeDropdown();
       return;
     }
-    currentRegion = value;
-    currentLabel = label;
+    currentRegion = code;
+    currentLabel  = label;
     regionCurrent.textContent = label;
 
-    // Bật bóng đen nhẹ dưới selector
+    // Bóng đen nhẹ dưới selector
     regionBtn.classList.add('has-selected');
 
     regionList.querySelectorAll('.region-item').forEach(el => {
-      const isSel = el.dataset.value === value;
+      const isSel = el.dataset.value === code;
       el.classList.toggle('selected', isSel);
       el.setAttribute('aria-selected', isSel ? 'true' : 'false');
     });
 
     closeDropdown();
-    showToast(`Đã chuyển sang ${label}`);
-    loadEvents(value);
+
+    // Toast: chỉ hiện mã code — "Đã chuyển sang Server VN"
+    showToast(`Đã chuyển sang Server ${code}`);
+
+    loadEvents(code);
   }
 
   regionBtn.addEventListener('click', (e) => {
@@ -89,8 +92,7 @@
   regionList.addEventListener('click', (e) => {
     const item = e.target.closest('.region-item');
     if (!item) return;
-    const label = item.textContent.trim();
-    selectRegion(item.dataset.value, label);
+    selectRegion(item.dataset.value, item.textContent.trim());
   });
 
   document.addEventListener('click', (e) => {
@@ -106,7 +108,6 @@
 
   /* ---------- Init ---------- */
   function init() {
-    // Đồng bộ label ban đầu từ item đang selected
     const initial = regionList.querySelector('.region-item.selected');
     if (initial) {
       currentRegion = initial.dataset.value;
