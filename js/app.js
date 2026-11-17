@@ -34,8 +34,8 @@
          TODO: GẮN API TẠI ĐÂY
          ═══════════════════════════════════════════ */
 
-      // Thời gian chờ: 2s - 3s (Nhanh hơn xíu so với trước)
-      const loadDelay = Math.floor(Math.random() * 1000) + 2000;
+      // Tăng tốc độ tải: Thời gian chờ 1.2s - 1.8s
+      const loadDelay = Math.floor(Math.random() * 600) + 1200;
       await new Promise(r => setTimeout(r, loadDelay));
       
       UI.renderEmpty('GIAO DIỆN ĐÃ SẴN SÀNG');
@@ -119,8 +119,8 @@
     Loader.start();
     loadEvents(currentRegion);
     
-    // Đề phòng API lỗi treo, tự động ẩn Loader sau 4s
-    setTimeout(() => Loader.hide(), 4000);
+    // Đề phòng API lỗi treo, tự động ẩn Loader sau 2.5s
+    setTimeout(() => Loader.hide(), 2500);
   }
 
   if (document.readyState === 'loading') {
