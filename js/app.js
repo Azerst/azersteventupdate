@@ -34,7 +34,10 @@
          TODO: GẮN API TẠI ĐÂY
          ═══════════════════════════════════════════ */
 
-      await new Promise(r => setTimeout(r, 600));
+      // Random thời gian chờ từ 3s đến 5s (3000ms - 5000ms)
+      const loadDelay = Math.floor(Math.random() * 2000) + 3000;
+      await new Promise(r => setTimeout(r, loadDelay));
+      
       UI.renderEmpty('GIAO DIỆN ĐÃ SẴN SÀNG');
 
     } catch (err) {
@@ -43,7 +46,11 @@
     } finally {
       loading = false;
       btnRefresh.disabled = false;
-      Loader.hide();
+      // Không cần gọi Loader.hide() ở đây vì đã có setTimeout trong hàm init()
+      // Tuy nhiên nếu là bấm nút Refresh thì cần gọi
+      if (document.getElementById('loader')) {
+        Loader.hide();
+      }
     }
   }
 
@@ -117,7 +124,9 @@
 
     Loader.start();
     loadEvents(currentRegion);
-    setTimeout(() => Loader.hide(), 10000);
+    
+    // Tự động ẩn Loader sau tối đa 6 giây (để phòng trường hợp API lỗi)
+    setTimeout(() => Loader.hide(), 6000);
   }
 
   if (document.readyState === 'loading') {
