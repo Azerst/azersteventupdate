@@ -4,10 +4,15 @@
   z-index:9999;
   display:grid;
   place-items:center;
-  background:
-    radial-gradient(ellipse at 30% 30%, rgba(255,122,92,.2) 0%, transparent 55%),
-    radial-gradient(ellipse at 70% 70%, rgba(217,56,40,.22) 0%, transparent 55%),
-    linear-gradient(160deg,#f8fafc,#eef2f6 50%,#e2e8f0);
+  /* Đồng bộ nền với trang chủ (màu nền, lưới ô vuông, loang hồng) */
+  background-color: var(--bg-main);
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px),
+    radial-gradient(circle at 15% 20%, rgba(255,180,160,.22) 0%, transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(255,140,120,.18) 0%, transparent 50%);
+  background-size: 32px 32px, 32px 32px, 100% 100%, 100% 100%;
+  background-position: center top, center top, center, center;
   transition:opacity .7s cubic-bezier(.2,.8,.2,1), visibility .7s;
 }
 #loader.hide{
