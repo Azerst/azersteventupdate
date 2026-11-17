@@ -7,7 +7,7 @@
   const regionCurrent  = document.getElementById('regionCurrent');
   const toastEl        = document.getElementById('toast');
 
-  let currentRegion = 'VN';
+  let currentRegion = 'vn'; // Mặc định là vn
   let currentLabel  = 'VN - Việt Nam';
   let loading = false;
   let toastTimer = null;
@@ -21,7 +21,27 @@
     toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
   }
 
-  /* ---------- Load events ---------- */
+  /* ---------- Hàm chuyển đổi dữ liệu API (Dự phòng) ---------- */
+  // Nếu API trả về tên trường khác (VD: name thay vì title), bạn có thể sửa ở đây
+  function mapApiData(rawData) {
+    // Giả sử API trả về mảng trực tiếp hoặc nằm trong key data/events
+    const list = Array.isArray(rawData) ? rawData : (rawData.data || rawData.events || []);
+    
+    return list.map(item => {
+      return {
+        title: item.title || item.name || 'Sự kiện Free Fire',
+        desc: item.desc || item.description || item.content || '',
+        img: item.img || item.image || item.thumbnail || '',
+        tag: item.tag || item.type || 'EVENT',
+        statusLabel: item.statusLabel || item.status || 'Đang diễn ra',
+        statusClass: item.statusClass || 'active',
+        start: item.start || item.start_time || '',
+        end: item.end || item.end_time || ''
+      };
+    });
+  }
+
+  /* ---------- Load events (GỌI API THẬT) ---------- */
   async function loadEvents(region) {
     if (loading) return;
     loading = true;
@@ -30,22 +50,38 @@
     btnRefresh.disabled = true;
 
     try {
-      /* ═══════════════════════════════════════════
-         TODO: GẮN API TẠI ĐÂY
-         ═══════════════════════════════════════════ */
+      // Gọi API với header x-region
+      const response = await fetch('https://event.x3x.workers.dev/', {
+        method: 'GET',
+        headers: {
+          'accept': '*/*',
+          'x-region': region,
+          'x-requested-with': 'fetch'
+        }
+      });
 
-      // Tăng tốc độ tải: Thời gian chờ 1.2s - 1.8s
-      const loadDelay = Math.floor(Math.random() * 600) + 1200;
-      await new Promise(r => setTimeout(r, loadDelay));
+      // Xử lý lỗi HTTP (Ví dụ: na, sg đang lỗi)
+      if (!response.ok) {
+        throw new Error(`Máy chủ ${region.toUpperCase()} đang bảo trì hoặc không có dữ liệu (Mã lỗi: ${response.status})`);
+      }
+
+      const rawData = await response.json();
       
-      UI.renderEmpty('GIAO DIỆN ĐÃ SẴN SÀNG');
+      // Chuyển đổi dữ liệu
+      const events = mapApiData(rawData);
+
+      // Render ra giao diện
+      UI.renderEvents(events, region.toUpperCase());
 
     } catch (err) {
       console.error('[events]', err);
+      // Nếu server na hoặc sg lỗi, báo lỗi rõ ràng cho người dùng
       UI.renderError(err);
     } finally {
       loading = false;
       btnRefresh.disabled = false;
+      
+      // Ẩn Loader
       if (document.getElementById('loader')) {
         Loader.hide();
       }
@@ -80,7 +116,7 @@
     });
 
     closeDropdown();
-    showToast(`Đã chuyển sang Server ${code}`);
+    showToast(`Đã chuyển sang Server ${code.toUpperCase()}`);
     loadEvents(code);
   }
 
@@ -119,8 +155,8 @@
     Loader.start();
     loadEvents(currentRegion);
     
-    // Đề phòng API lỗi treo, tự động ẩn Loader sau 2.5s
-    setTimeout(() => Loader.hide(), 2500);
+    // Ẩn Loader sau 3s phòng trường hợp API phản hồi chậm
+    setTimeout(() => Loader.hide(), 3000);
   }
 
   if (document.readyState === 'loading') {
