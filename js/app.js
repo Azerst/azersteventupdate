@@ -1,10 +1,26 @@
 /* App — khởi động */
 (function () {
-  const btnRefresh = document.getElementById('btnRefresh');
-  const regionSel  = document.getElementById('regionSelect');
+  const btnRefresh   = document.getElementById('btnRefresh');
+  const regionDropdown = document.getElementById('regionDropdown');
+  const regionBtn    = document.getElementById('regionBtn');
+  const regionList   = document.getElementById('regionList');
+  const regionCurrent = document.getElementById('regionCurrent');
+  const toastEl      = document.getElementById('toast');
 
-  let loading = false;   // FIX #5: guard double-click
+  let currentRegion = 'VN';
+  let loading = false;
+  let toastTimer = null;
 
+  /* ---------- Toast ---------- */
+  function showToast(msg) {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  }
+
+  /* ---------- Load events ---------- */
   async function loadEvents(region) {
     if (loading) return;
     loading = true;
@@ -14,41 +30,83 @@
 
     try {
       /* ═══════════════════════════════════════════
-         TODO: GẮN API TẠI ĐÂY (khi có)
+         TODO: GẮN API TẠI ĐÂY
          const res  = await fetch(`/api/events?region=${region}`);
          const raw  = await res.json();
-         const data = normalize(raw);      // hàm tự viết
+         const data = normalize(raw);
          UI.renderEvents(data, region);
          return;
          ═══════════════════════════════════════════ */
 
-      // Chưa có API: chờ 600ms rồi hiện empty state
       await new Promise(r => setTimeout(r, 600));
-      UI.renderEmpty('Giao diện đã sẵn sàng — chờ API được gắn vào app.js');
+      UI.renderEmpty('GIAO DIỆN ĐÃ SẴN SÀNG');
 
     } catch (err) {
       console.error('[events]', err);
       UI.renderError(err);
-
     } finally {
-      // FIX #1: Loader luôn được đóng dù thành công hay lỗi
       loading = false;
       btnRefresh.disabled = false;
       Loader.hide();
     }
   }
 
-  function bindEvents() {
-    btnRefresh.addEventListener('click', () => loadEvents(regionSel.value));
-    regionSel.addEventListener('change', () => loadEvents(regionSel.value));
+  /* ---------- Dropdown ---------- */
+  function openDropdown() {
+    regionDropdown.classList.add('open');
+    regionBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeDropdown() {
+    regionDropdown.classList.remove('open');
+    regionBtn.setAttribute('aria-expanded', 'false');
   }
 
+  function selectRegion(value) {
+    if (value === currentRegion) {
+      closeDropdown();
+      return;
+    }
+    currentRegion = value;
+    regionCurrent.textContent = value;
+
+    regionList.querySelectorAll('.region-item').forEach(el => {
+      const isSel = el.dataset.value === value;
+      el.classList.toggle('selected', isSel);
+      el.setAttribute('aria-selected', isSel ? 'true' : 'false');
+    });
+
+    closeDropdown();
+    showToast(`Đã chuyển sang server ${value}`);
+    loadEvents(value);
+  }
+
+  regionBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (regionDropdown.classList.contains('open')) closeDropdown();
+    else openDropdown();
+  });
+
+  regionList.addEventListener('click', (e) => {
+    const item = e.target.closest('.region-item');
+    if (!item) return;
+    selectRegion(item.dataset.value);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!regionDropdown.contains(e.target)) closeDropdown();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDropdown();
+  });
+
+  /* ---------- Refresh ---------- */
+  btnRefresh.addEventListener('click', () => loadEvents(currentRegion));
+
+  /* ---------- Init ---------- */
   function init() {
     Loader.start();
-    bindEvents();
-    loadEvents(regionSel.value);
-
-    // Fallback cứu hộ: nếu vì lý do gì Loader không được hide sau 10s
+    loadEvents(currentRegion);
     setTimeout(() => Loader.hide(), 10000);
   }
 
