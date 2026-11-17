@@ -34,8 +34,8 @@
          TODO: GẮN API TẠI ĐÂY
          ═══════════════════════════════════════════ */
 
-      // Random thời gian chờ từ 3s đến 5s (3000ms - 5000ms)
-      const loadDelay = Math.floor(Math.random() * 2000) + 3000;
+      // Thời gian chờ: 2s - 3s (Nhanh hơn xíu so với trước)
+      const loadDelay = Math.floor(Math.random() * 1000) + 2000;
       await new Promise(r => setTimeout(r, loadDelay));
       
       UI.renderEmpty('GIAO DIỆN ĐÃ SẴN SÀNG');
@@ -46,8 +46,6 @@
     } finally {
       loading = false;
       btnRefresh.disabled = false;
-      // Không cần gọi Loader.hide() ở đây vì đã có setTimeout trong hàm init()
-      // Tuy nhiên nếu là bấm nút Refresh thì cần gọi
       if (document.getElementById('loader')) {
         Loader.hide();
       }
@@ -73,7 +71,6 @@
     currentLabel  = label;
     regionCurrent.textContent = label;
 
-    // Bóng đen nhẹ dưới selector
     regionBtn.classList.add('has-selected');
 
     regionList.querySelectorAll('.region-item').forEach(el => {
@@ -83,10 +80,7 @@
     });
 
     closeDropdown();
-
-    // Toast: chỉ hiện mã code — "Đã chuyển sang Server VN"
     showToast(`Đã chuyển sang Server ${code}`);
-
     loadEvents(code);
   }
 
@@ -125,8 +119,8 @@
     Loader.start();
     loadEvents(currentRegion);
     
-    // Tự động ẩn Loader sau tối đa 6 giây (để phòng trường hợp API lỗi)
-    setTimeout(() => Loader.hide(), 6000);
+    // Đề phòng API lỗi treo, tự động ẩn Loader sau 4s
+    setTimeout(() => Loader.hide(), 4000);
   }
 
   if (document.readyState === 'loading') {
