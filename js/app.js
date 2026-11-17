@@ -7,7 +7,7 @@
   const regionCurrent  = document.getElementById('regionCurrent');
   const toastEl        = document.getElementById('toast');
 
-  let currentRegion = 'vn';
+  let currentRegion = 'VN';
   let currentLabel  = 'VN - Việt Nam';
   let loading = false;
   let toastTimer = null;
@@ -21,51 +21,7 @@
     toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
   }
 
-  /* ---------- Tự động dò tìm mảng dữ liệu từ JSON (đa dạng cấu trúc) ---------- */
-  function extractEvents(rawData) {
-    if (Array.isArray(rawData)) return rawData;
-    if (typeof rawData === 'object' && rawData !== null) {
-      const keys = ['data', 'events', 'list', 'items', 'result', 'event_list', 'event'];
-      for (let key of keys) {
-        if (Array.isArray(rawData[key])) return rawData[key];
-        if (rawData[key] && typeof rawData[key] === 'object') {
-          for (let subKey of keys) {
-            if (Array.isArray(rawData[key][subKey])) return rawData[key][subKey];
-          }
-        }
-      }
-    }
-    return [];
-  }
-
-  /* ---------- Chuyển đổi dữ liệu thô sang chuẩn UI (map ui.js) ---------- */
-  function mapEventsToUI(eventsArray) {
-    return eventsArray.map((item, idx) => {
-      // Xử lý trạng thái (Active / Upcoming / Ended)
-      let statusLabel = 'Đang diễn ra';
-      let statusClass = 'active';
-      
-      const rawStatus = (item.status || item.state || '').toString().toLowerCase();
-      if (rawStatus.includes('upcoming') || rawStatus.includes('soon') || rawStatus.includes('sắp')) {
-        statusLabel = 'Sắp diễn ra'; statusClass = 'upcoming';
-      } else if (rawStatus.includes('end') || rawStatus.includes('over') || rawStatus.includes('kết')) {
-        statusLabel = 'Đã kết thúc'; statusClass = 'ended';
-      }
-
-      return {
-        title: item.title || item.name || item.event_name || `Sự kiện #${idx + 1}`,
-        desc: item.desc || item.description || item.content || item.short_desc || item.intro || '',
-        img: item.img || item.image || item.banner || item.banner_url || item.thumbnail || item.icon || item.pic || '',
-        tag: (item.tag || item.type || item.category || 'EVENT').toString().toUpperCase(),
-        statusLabel: item.statusLabel || statusLabel,
-        statusClass: item.statusClass || statusClass,
-        start: item.start || item.start_time || item.startTime || item.begin || '',
-        end: item.end || item.end_time || item.endTime || item.finish || ''
-      };
-    });
-  }
-
-  /* ---------- Load events (GỌI API THẬT) ---------- */
+  /* ---------- Load events (GIẢ LẬP - CHƯA GẮN API) ---------- */
   async function loadEvents(region) {
     if (loading) return;
     loading = true;
@@ -74,57 +30,25 @@
     btnRefresh.disabled = true;
 
     try {
-      const response = await fetch('https://event.x3x.workers.dev/', {
-        method: 'GET',
-        headers: {
-          'accept': '*/*',
-          'x-region': region,
-          'x-requested-with': 'fetch'
-        }
-      });
+      /* ═══════════════════════════════════════════
+         TODO: GẮN API TẠI ĐÂY (Khi nào sẵn sàng thì mở ra)
+         ═══════════════════════════════════════════ */
 
-      const text = await response.text();
+      // Thời gian chờ giả lập: Nhanh (1.2s - 1.8s)
+      const loadDelay = Math.floor(Math.random() * 600) + 1200;
+      await new Promise(r => setTimeout(r, loadDelay));
       
-      // Kiểm tra nếu API trả về HTML (Lỗi CORS, Cloudflare chặn, hoặc trang lỗi)
-      if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-        throw new Error(`API trả về HTML (Mã HTTP: ${response.status}). Có thể do lỗi CORS hoặc Cloudflare đang chặn.`);
-      }
-
-      if (!response.ok) {
-        throw new Error(`Server ${region.toUpperCase()} lỗi (Mã HTTP: ${response.status}). Server này có thể đang bảo trì.`);
-      }
-
-      let rawData;
-      try {
-        rawData = JSON.parse(text);
-      } catch (e) {
-        throw new Error("Dữ liệu API trả về không phải JSON hợp lệ.");
-      }
-
-      const eventsArray = extractEvents(rawData);
-      const events = mapEventsToUI(eventsArray);
-
-      if (events.length === 0) {
-        UI.renderEmpty('KHÔNG CÓ SỰ KIỆN NÀO');
-      } else {
-        UI.renderEvents(events, region.toUpperCase());
-      }
+      UI.renderEmpty('GIAO DIỆN ĐÃ SẴN SÀNG');
 
     } catch (err) {
-      console.error('[events error]', err);
-      
-      let userMsg = err.message || 'Lỗi không xác định';
-      
-      // Bắt lỗi CORS / Network phổ biến
-      if (userMsg.includes("Failed to fetch") || userMsg.includes("NetworkError") || userMsg.includes("Load failed")) {
-        userMsg = "Lỗi CORS: Trình duyệt chặn gọi API. Bạn cần cấu hình CORS cho Cloudflare Worker (xem hướng dẫn bên dưới).";
-      }
-      
-      UI.renderError(new Error(userMsg));
+      console.error('[events]', err);
+      UI.renderError(err);
     } finally {
       loading = false;
       btnRefresh.disabled = false;
-      if (document.getElementById('loader')) Loader.hide();
+      if (document.getElementById('loader')) {
+        Loader.hide();
+      }
     }
   }
 
@@ -146,6 +70,7 @@
     currentRegion = code;
     currentLabel  = label;
     regionCurrent.textContent = label;
+
     regionBtn.classList.add('has-selected');
 
     regionList.querySelectorAll('.region-item').forEach(el => {
@@ -155,7 +80,7 @@
     });
 
     closeDropdown();
-    showToast(`Đã chuyển sang Server ${code.toUpperCase()}`);
+    showToast(`Đã chuyển sang Server ${code}`);
     loadEvents(code);
   }
 
@@ -193,7 +118,9 @@
 
     Loader.start();
     loadEvents(currentRegion);
-    setTimeout(() => Loader.hide(), 4000);
+    
+    // Tự động ẩn Loader sau 3s (đề phòng giật lag)
+    setTimeout(() => Loader.hide(), 3000);
   }
 
   if (document.readyState === 'loading') {
