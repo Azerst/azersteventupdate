@@ -62,6 +62,8 @@ body{
   -webkit-tap-highlight-color:transparent;
   position:relative;
   isolation:isolate;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Lớp nền loang hồng - Đứng yên, nhẹ nhàng */
@@ -198,12 +200,12 @@ button:focus-visible,
   line-height:1.15;
   margin-bottom:6px;
 
-  /* Các lớp gradient: Trắng -> Hồng -> Đỏ tươi -> Nền đỏ sẫm */
+  /* Trắng, Hồng, Đỏ tươi */
   background-image:
-    radial-gradient(circle at var(--ax) var(--ay), #ffffff 0%, rgba(255,255,255,0) 35%),
-    radial-gradient(circle at var(--bx) var(--by), #ffb3b3 0%, rgba(255,179,179,0) 45%),
-    radial-gradient(circle at var(--cx) var(--cy), #ff5e5e 0%, rgba(255,94,94,0) 50%),
-    linear-gradient(135deg, #d93828 0%, #b52a1c 100%);
+    radial-gradient(circle at var(--ax) var(--ay), #ffffff 0%, rgba(255,255,255,0) 40%),
+    radial-gradient(circle at var(--bx) var(--by), #ff80bf 0%, rgba(255,128,191,0) 45%),
+    radial-gradient(circle at var(--cx) var(--cy), #ff3333 0%, rgba(255,51,51,0) 50%),
+    linear-gradient(135deg, #ff4d4d 0%, #e60000 100%);
 
   background-size:100% 100%;
   background-repeat:no-repeat;
@@ -213,25 +215,19 @@ button:focus-visible,
   -webkit-text-fill-color:transparent;
           color:transparent;
 
-  filter:
-    drop-shadow(0 1px 0 rgba(255,255,255,.55))
-    drop-shadow(0 2px 4px rgba(80,80,90,.32))
-    drop-shadow(0 6px 14px rgba(60,60,70,.4));
+  /* Bỏ bóng đen, chỉ giữ viền sáng trắng */
+  filter: drop-shadow(0 0 4px rgba(255,255,255,.4));
 
-  /* Tăng thời gian lên 30s để loang chậm hơn */
-  animation:nameFlare 30s ease-in-out infinite;
+  animation:nameFlare 35s ease-in-out infinite;
 }
 
-/* Di chuyển các điểm loang ngẫu nhiên, chéo góc */
 @keyframes nameFlare{
-  0%   { --ax:10%; --ay:20%; --bx:80%; --by:90%; --cx:50%; --cy:50%; }
-  15%  { --ax:85%; --ay:15%; --bx:15%; --by:85%; --cx:70%; --cy:30%; }
-  30%  { --ax:90%; --ay:85%; --bx:10%; --by:15%; --cx:30%; --cy:70%; }
-  45%  { --ax:15%; --ay:90%; --bx:85%; --by:10%; --cx:55%; --cy:45%; }
-  60%  { --ax:60%; --ay:20%; --bx:40%; --by:80%; --cx:20%; --cy:80%; }
-  75%  { --ax:30%; --ay:80%; --bx:70%; --by:20%; --cx:80%; --cy:20%; }
-  90%  { --ax:80%; --ay:50%; --bx:20%; --by:50%; --cx:40%; --cy:60%; }
-  100% { --ax:10%; --ay:20%; --bx:80%; --by:90%; --cx:50%; --cy:50%; }
+  0%   { --ax:10%; --ay:10%; --bx:90%; --by:90%; --cx:50%; --cy:50%; }
+  20%  { --ax:90%; --ay:10%; --bx:10%; --by:90%; --cx:80%; --cy:20%; }
+  40%  { --ax:10%; --ay:90%; --bx:90%; --by:10%; --cx:20%; --cy:80%; }
+  60%  { --ax:50%; --ay:10%; --bx:50%; --by:90%; --cx:10%; --cy:50%; }
+  80%  { --ax:90%; --ay:50%; --bx:10%; --by:50%; --cx:80%; --cy:80%; }
+  100% { --ax:10%; --ay:10%; --bx:90%; --by:90%; --cx:50%; --cy:50%; }
 }
 
 .handle{
@@ -243,7 +239,7 @@ button:focus-visible,
 }
 
 /* ============ CONTENT ============ */
-.content{ padding:8px 20px 40px; }
+.content{ padding:8px 20px 20px; flex: 1; }
 .content-inner{
   max-width:640px;
   margin:0 auto;
@@ -616,6 +612,19 @@ button:focus-visible,
   transform:translateX(-50%) translateY(0);
 }
 
+/* ============ FOOTER ============ */
+.footer {
+  text-align: center;
+  padding: 20px 18px 30px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width:480px){
   .name{ font-size:28px; letter-spacing:3px; }
@@ -626,9 +635,10 @@ button:focus-visible,
 }
 @media (max-width:380px){
   .hero{ padding:20px 12px 8px; }
-  .content{ padding:8px 12px 40px; }
+  .content{ padding:8px 12px 20px; }
   .region-current{ max-width:110px; overflow:hidden; text-overflow:ellipsis; }
   .toast{ font-size:11px; padding:10px 16px; }
+  .footer { padding-bottom: 20px; }
 }
 
 /* ============ REDUCED MOTION ============ */
