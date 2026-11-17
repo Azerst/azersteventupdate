@@ -13,11 +13,12 @@ window.Loader = (function () {
     document.documentElement.classList.add('loading');
 
     let p = 0;
+    // Tăng tốc độ chạy thanh Loader: 120ms, tăng 3.5%
     interval = setInterval(() => {
-      p = Math.min(90, p + Math.random() * 12);
+      p = Math.min(90, p + Math.random() * 3.5); 
       fill.style.width = p + '%';
       pct.textContent = Math.floor(p) + '%';
-    }, 180);
+    }, 120);
   }
 
   function hide() {
