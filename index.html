@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Azerst — Free Fire Event Tracker" />
   <meta name="theme-color" content="#d93828" />
   <title>Azerst — Events</title>
@@ -39,20 +39,28 @@
   <main class="content">
     <div class="content-inner">
 
+      <!-- Toolbar -->
       <div class="toolbar">
         <button class="btn-refresh" id="btnRefresh" type="button">
           <span class="ico">↻</span> Tải lại
         </button>
 
-        <span class="region-wrap">
-          <select class="region-select" id="regionSelect" aria-label="Chọn server">
-            <option value="VN" selected>VN</option>
-            <option value="ID">ID</option>
-            <option value="TH">TH</option>
-            <option value="BR">BR</option>
-            <option value="SG">SG</option>
-          </select>
-        </span>
+        <!-- Custom dropdown server -->
+        <div class="region-dropdown" id="regionDropdown">
+          <button class="region-btn" id="regionBtn" type="button"
+                  aria-haspopup="listbox" aria-expanded="false">
+            <span class="region-current" id="regionCurrent">VN</span>
+            <span class="region-arrow" aria-hidden="true"></span>
+          </button>
+
+          <ul class="region-list" id="regionList" role="listbox" aria-label="Chọn server">
+            <li class="region-item selected" data-value="VN" role="option" aria-selected="true">VN</li>
+            <li class="region-item" data-value="ID" role="option" aria-selected="false">ID</li>
+            <li class="region-item" data-value="TH" role="option" aria-selected="false">TH</li>
+            <li class="region-item" data-value="BR" role="option" aria-selected="false">BR</li>
+            <li class="region-item" data-value="SG" role="option" aria-selected="false">SG</li>
+          </ul>
+        </div>
       </div>
 
       <div class="stat-line" id="statLine">—</div>
@@ -65,6 +73,9 @@
 
     </div>
   </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="js/loader.js"></script>
   <script src="js/ui.js"></script>
