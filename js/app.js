@@ -1,13 +1,14 @@
 /* App — khởi động */
 (function () {
-  const btnRefresh   = document.getElementById('btnRefresh');
+  const btnRefresh     = document.getElementById('btnRefresh');
   const regionDropdown = document.getElementById('regionDropdown');
-  const regionBtn    = document.getElementById('regionBtn');
-  const regionList   = document.getElementById('regionList');
-  const regionCurrent = document.getElementById('regionCurrent');
-  const toastEl      = document.getElementById('toast');
+  const regionBtn      = document.getElementById('regionBtn');
+  const regionList     = document.getElementById('regionList');
+  const regionCurrent  = document.getElementById('regionCurrent');
+  const toastEl        = document.getElementById('toast');
 
   let currentRegion = 'VN';
+  let currentLabel  = 'VN - Việt Nam';
   let loading = false;
   let toastTimer = null;
 
@@ -31,11 +32,6 @@
     try {
       /* ═══════════════════════════════════════════
          TODO: GẮN API TẠI ĐÂY
-         const res  = await fetch(`/api/events?region=${region}`);
-         const raw  = await res.json();
-         const data = normalize(raw);
-         UI.renderEvents(data, region);
-         return;
          ═══════════════════════════════════════════ */
 
       await new Promise(r => setTimeout(r, 600));
@@ -61,13 +57,17 @@
     regionBtn.setAttribute('aria-expanded', 'false');
   }
 
-  function selectRegion(value) {
+  function selectRegion(value, label) {
     if (value === currentRegion) {
       closeDropdown();
       return;
     }
     currentRegion = value;
-    regionCurrent.textContent = value;
+    currentLabel = label;
+    regionCurrent.textContent = label;
+
+    // Bật bóng đen nhẹ dưới selector
+    regionBtn.classList.add('has-selected');
 
     regionList.querySelectorAll('.region-item').forEach(el => {
       const isSel = el.dataset.value === value;
@@ -76,7 +76,7 @@
     });
 
     closeDropdown();
-    showToast(`Đã chuyển sang server ${value}`);
+    showToast(`Đã chuyển sang ${label}`);
     loadEvents(value);
   }
 
@@ -89,7 +89,8 @@
   regionList.addEventListener('click', (e) => {
     const item = e.target.closest('.region-item');
     if (!item) return;
-    selectRegion(item.dataset.value);
+    const label = item.textContent.trim();
+    selectRegion(item.dataset.value, label);
   });
 
   document.addEventListener('click', (e) => {
@@ -105,6 +106,14 @@
 
   /* ---------- Init ---------- */
   function init() {
+    // Đồng bộ label ban đầu từ item đang selected
+    const initial = regionList.querySelector('.region-item.selected');
+    if (initial) {
+      currentRegion = initial.dataset.value;
+      currentLabel  = initial.textContent.trim();
+      regionCurrent.textContent = currentLabel;
+    }
+
     Loader.start();
     loadEvents(currentRegion);
     setTimeout(() => Loader.hide(), 10000);
