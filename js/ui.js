@@ -55,10 +55,11 @@ window.UI = (function () {
         ? `<div class="event-time"><span>${escapeHtml(it.start || '—')}</span><span>${escapeHtml(it.end || '—')}</span></div>`
         : '';
 
+      // Nếu ảnh lỗi, thay bằng ảnh placeholder.svg
       return `
         <article class="event-card" style="animation-delay:${idx * 50}ms">
           <div class="event-thumb">
-            ${it.img ? `<img src="${escapeHtml(it.img)}" alt="${escapeHtml(it.title)}" loading="lazy" onerror="this.style.display='none'">` : ''}
+            ${it.img ? `<img src="${escapeHtml(it.img)}" alt="${escapeHtml(it.title)}" loading="lazy" onerror="this.onerror=null; this.src='img/placeholder.svg';">` : ''}
             <div class="event-tag">${escapeHtml(String(it.tag || 'EVENT').toUpperCase())}</div>
             ${it.statusLabel ? `<div class="event-status ${escapeHtml(it.statusClass || '')}">${escapeHtml(it.statusLabel)}</div>` : ''}
           </div>
