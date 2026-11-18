@@ -1,2 +1,0 @@
-/* Event loading and rendering are connected in the appended API script in index.html.
-   This file is kept to preserve the original script reference. */
