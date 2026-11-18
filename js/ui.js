@@ -12,6 +12,16 @@ window.UI = (function () {
     if (wrap) wrap.setAttribute('aria-busy', busy ? 'true' : 'false');
   }
 
+  /* ---------- Hàm hiển thị Toast dùng chung ---------- */
+  function showToast(msg) {
+    const toastEl = document.getElementById('toast');
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
+  }
+
   function renderSkeletons(n = 3) {
     const wrap = $('#eventsWrap');
     if (!wrap) return;
@@ -91,13 +101,12 @@ window.UI = (function () {
     document.getElementById('modalTag').textContent = (item.tag || 'EVENT').toUpperCase();
     document.getElementById('modalTitle').textContent = item.title || 'Sự kiện';
     
-    // Bỏ icon, chỉ hiển thị giá trị
     document.getElementById('modalStart').textContent = item.start || '—';
     document.getElementById('modalEnd').textContent = item.end || '—';
 
     const btnDownload = document.getElementById('btnDownload');
     btnDownload.dataset.url = item.img || '';
-    btnDownload.dataset.name = getFilename(item.img, item.title);
+    btnDownload.dataset.title = item.title || 'Event'; // Lưu tên sự kiện để đặt tên file
 
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
@@ -112,22 +121,29 @@ window.UI = (function () {
     document.body.classList.remove('modal-open');
   }
 
-  function getFilename(url, title) {
-    const safeName = (title || 'azerst-event').replace(/[\\/:*?"<>|]/g, '_').substring(0, 60);
-    let ext = 'png';
-    try {
-      const match = new URL(url || '').pathname.match(/\.(png|jpg|jpeg|webp|gif)$/i);
-      if (match) ext = match[1].toLowerCase();
-    } catch (e) {}
-    return safeName + '.' + ext;
-  }
+  /* ---------- Tải xuống (Có thông báo & Đặt tên AZERST_) ---------- */
+  function downloadImage(url, title) {
+    if (!url) {
+      showToast('Không có ảnh để tải');
+      return;
+    }
 
-  /* ---------- Tải xuống ---------- */
-  function downloadImage(url, filename) {
-    if (!url) return;
+    // Tạo tên file chuẩn: AZERST_TenSuKien.png
+    let safeName = (title || 'Su_Kien').replace(/[\\/:*?"<>|]/g, '_').substring(0, 50);
+    
+    showToast('Đang tải ảnh...');
+
     fetch(url, { mode: 'cors' })
       .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.blob(); })
       .then(blob => {
+        // Lấy đuôi file từ định dạng ảnh thực tế
+        let ext = 'png';
+        if (blob.type === 'image/jpeg') ext = 'jpg';
+        else if (blob.type === 'image/webp') ext = 'webp';
+        else if (blob.type === 'image/gif') ext = 'gif';
+
+        const filename = `AZERST_${safeName}.${ext}`;
+
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = filename;
@@ -135,9 +151,13 @@ window.UI = (function () {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(link.href);
+
+        showToast('Tải ảnh thành công!');
       })
-      .catch(() => {
+      .catch((err) => {
+        console.warn('Lỗi tải ảnh, mở tab mới:', err);
         window.open(url, '_blank', 'noopener');
+        showToast('Đã mở ảnh ở tab mới (Trình duyệt chặn tải trực tiếp)');
       });
   }
 
@@ -164,7 +184,6 @@ window.UI = (function () {
     const modal = document.getElementById('eventModal');
     if (modal) {
       modal.addEventListener('click', (e) => {
-        // Chỉ đóng khi click vào overlay (không phải content)
         if (e.target === modal) closeModal();
       });
     }
@@ -178,11 +197,11 @@ window.UI = (function () {
     const btnDownload = document.getElementById('btnDownload');
     if (btnDownload) {
       btnDownload.addEventListener('click', () => {
-        downloadImage(btnDownload.dataset.url, btnDownload.dataset.name);
+        downloadImage(btnDownload.dataset.url, btnDownload.dataset.title);
       });
     }
 
-    // Chặn context menu (nhấn giữ) trên tất cả ảnh
+    // Chặn menu chuột phải / nhấn giữ ảnh
     document.addEventListener('contextmenu', (e) => {
       if (e.target.tagName === 'IMG') e.preventDefault();
     });
