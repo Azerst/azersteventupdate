@@ -90,8 +90,10 @@ window.UI = (function () {
 
     document.getElementById('modalTag').textContent = (item.tag || 'EVENT').toUpperCase();
     document.getElementById('modalTitle').textContent = item.title || 'Sự kiện';
-    document.getElementById('modalStart').textContent = item.start ? `📅 Bắt đầu: ${item.start}` : '';
-    document.getElementById('modalEnd').textContent = item.end ? `⏰ Kết thúc: ${item.end}` : '';
+    
+    // Bỏ icon, chỉ hiển thị giá trị
+    document.getElementById('modalStart').textContent = item.start || '—';
+    document.getElementById('modalEnd').textContent = item.end || '—';
 
     const btnDownload = document.getElementById('btnDownload');
     btnDownload.dataset.url = item.img || '';
@@ -162,6 +164,7 @@ window.UI = (function () {
     const modal = document.getElementById('eventModal');
     if (modal) {
       modal.addEventListener('click', (e) => {
+        // Chỉ đóng khi click vào overlay (không phải content)
         if (e.target === modal) closeModal();
       });
     }
@@ -178,6 +181,11 @@ window.UI = (function () {
         downloadImage(btnDownload.dataset.url, btnDownload.dataset.name);
       });
     }
+
+    // Chặn context menu (nhấn giữ) trên tất cả ảnh
+    document.addEventListener('contextmenu', (e) => {
+      if (e.target.tagName === 'IMG') e.preventDefault();
+    });
   }
 
   if (document.readyState === 'loading') {
