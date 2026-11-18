@@ -486,7 +486,6 @@ button:focus-visible,
   object-fit:cover;
   display:block;
   transition:transform .5s cubic-bezier(.2,.8,.2,1);
-  /* Chặn nhấn giữ / kéo ảnh trên giao diện chính */
   pointer-events: none;
   -webkit-user-select: none;
   user-select: none;
@@ -508,10 +507,12 @@ button:focus-visible,
   background:linear-gradient(135deg,var(--red),#ff7a5c);
   clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
 }
+
+/* ⚠️ ĐÃ SỬA: Nhãn trạng thái vuông vát góc trái dưới & phải trên */
 .event-status{
   position:absolute;
   top:10px; right:10px;
-  padding:5px 10px;
+  padding:6px 12px;
   font-family:var(--font-heading);
   font-weight:700;
   font-size:9px;
@@ -520,8 +521,13 @@ button:focus-visible,
   color:#fff;
   background:rgba(15,23,42,.72);
   backdrop-filter:blur(8px);
-  border-radius:4px;
+  -webkit-backdrop-filter:blur(8px);
+  /* Cắt góc: phải trên và trái dưới */
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  /* Đổ bóng nhẹ để tách biệt khỏi ảnh nền */
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
+
 .event-status.active{ background:rgba(22,163,74,.9); }
 .event-status.upcoming{ background:rgba(234,179,8,.9); }
 .event-status.ended{ background:rgba(100,116,139,.9); }
@@ -682,10 +688,9 @@ body.modal-open { overflow: hidden; }
   visibility: visible;
 }
 
-/* Nút X: nằm trên cùng bên phải, trong suốt (glass) */
 .modal-close {
   position: absolute;
-  top: 20px;
+  top: 35px;
   right: 20px;
   z-index: 100000;
   width: 42px;
@@ -720,7 +725,7 @@ body.modal-open { overflow: hidden; }
   clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
   transform: scale(0.9) translateY(20px);
   transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow: 0 25px 60px -20px rgba(0, 0, 0, 0.5);
+  filter: drop-shadow(0 0 1px rgba(255,255,255,0.6)) drop-shadow(0 25px 60px rgba(0,0,0,0.5));
 }
 .modal-overlay.show .modal-content {
   transform: scale(1) translateY(0);
@@ -762,7 +767,6 @@ body.modal-open { overflow: hidden; }
   margin-bottom: 16px;
 }
 
-/* Phần Bắt đầu / Kết thúc mới (2 khối) */
 .modal-time {
   display: flex;
   gap: 10px;
@@ -772,12 +776,19 @@ body.modal-open { overflow: hidden; }
   flex: 1;
   padding: 12px 14px;
   background: linear-gradient(135deg, rgba(217,56,40,0.06), rgba(217,56,40,0.02));
-  border: 1px solid rgba(217,56,40,0.15);
-  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(217,56,40,0.2);
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
+
+.time-item:first-child {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.time-item:last-child {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+
 .time-label {
   font-family: var(--font-heading);
   font-size: 9.5px;
@@ -836,7 +847,7 @@ body.modal-open { overflow: hidden; }
   .modal-overlay { padding: 12px; }
   .modal-title { font-size: 17px; }
   .modal-body { padding: 16px 18px 20px; }
-  .modal-close { top: 12px; right: 12px; width: 36px; height: 36px; }
+  .modal-close { top: 25px; right: 12px; width: 36px; height: 36px; }
 }
 @media (max-width:380px){
   .hero{ padding:20px 12px 8px; }
