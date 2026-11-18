@@ -12,6 +12,53 @@
 
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/loader.css" />
+
+  <!-- CSS GHI ĐÈ ĐỂ SỬA LỖI -->
+  <style>
+    /* 1. Chống kéo ảnh (áp dụng cho cả ảnh trong modal) */
+    .modal-thumb img {
+      -webkit-user-drag: none;
+      -khtml-user-drag: none;
+      -moz-user-drag: none;
+      -o-user-drag: none;
+      user-drag: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    /* 2. Điều chỉnh khung Modal để nút X nằm đúng vết cắt */
+    .modal-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .modal-content {
+      max-height: 100%;
+      width: 100%;
+    }
+
+    /* Dịch nút X lên trên, nằm ngay góc cắt */
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 100000;
+      width: 36px;
+      height: 36px;
+      font-size: 20px;
+      /* Giữ nguyên các style khác từ file gốc */
+    }
+
+    /* 3. Chỉnh lại phần ngày tháng bên ngoài card */
+    .event-time {
+      justify-content: space-between; /* Đẩy 2 ngày ra 2 bên */
+    }
+  </style>
 </head>
 <body>
 
@@ -21,7 +68,7 @@
       <div class="loader-emblem">
         <div class="loader-avatar">
           <img src="https://azerst-image-vn.vercel.app/images/AVATA_AZERST.png"
-               alt="Azerst" loading="eager" decoding="async" />
+               alt="Azerst" loading="eager" decoding="async" draggable="false" />
         </div>
       </div>
       <div class="loader-name">AZERST</div>
@@ -98,32 +145,36 @@
 
   <!-- EVENT DETAIL MODAL -->
   <div class="modal-overlay" id="eventModal" aria-hidden="true">
-    <button class="modal-close" id="modalClose" type="button" aria-label="Đóng">×</button>
+    
+    <!-- Thêm wrapper để chứa nút X -->
+    <div class="modal-wrapper">
+      <button class="modal-close" id="modalClose" type="button" aria-label="Đóng">×</button>
 
-    <div class="modal-content">
-      <div class="modal-thumb">
-        <!-- Đã xóa thuộc tính chuyển sang object-fit: contain khi lỗi để tránh viền trắng -->
-        <img id="modalImage" src="" alt="Event"
-             onerror="this.onerror=null; this.src='img/placeholder.svg';" />
-      </div>
-      <div class="modal-body">
-        <div class="modal-tag" id="modalTag"></div>
-        <h2 class="modal-title" id="modalTitle"></h2>
-        <div class="modal-time">
-          <div class="time-item">
-            <span class="time-label">BẮT ĐẦU</span>
-            <span class="time-value" id="modalStart">—</span>
-          </div>
-          <div class="time-item">
-            <span class="time-label">KẾT THÚC</span>
-            <span class="time-value" id="modalEnd">—</span>
-          </div>
+      <div class="modal-content">
+        <div class="modal-thumb">
+          <img id="modalImage" src="" alt="Event" draggable="false"
+               onerror="this.onerror=null; this.src='img/placeholder.svg';" />
         </div>
-        <div class="modal-actions">
-          <button class="btn-download" id="btnDownload" type="button">Tải xuống</button>
+        <div class="modal-body">
+          <div class="modal-tag" id="modalTag"></div>
+          <h2 class="modal-title" id="modalTitle"></h2>
+          <div class="modal-time">
+            <div class="time-item">
+              <span class="time-label">BẮT ĐẦU</span>
+              <span class="time-value" id="modalStart">—</span>
+            </div>
+            <div class="time-item">
+              <span class="time-label">KẾT THÚC</span>
+              <span class="time-value" id="modalEnd">—</span>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-download" id="btnDownload" type="button">Tải xuống</button>
+          </div>
         </div>
       </div>
     </div>
+
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -304,20 +355,21 @@
         return `
           <article class="event-card" data-event-index="${i}" tabindex="0" role="button" aria-label="Xem ${esc(event.title)}">
             <div class="event-thumb">
-              ${event.image ? `<img src="${esc(event.image)}" alt="${esc(event.title)}" loading="lazy" onerror="this.style.display='none'">` : ''}
+              ${event.image ? `<img src="${esc(event.image)}" alt="${esc(event.title)}" loading="lazy" draggable="false" onerror="this.style.display='none'">` : ''}
               
-              <!-- Nhãn hiển thị tên Server thay vì FREE FIRE -->
               <span class="event-tag">${esc(currentRegion)}</span>
-              
               <span class="event-status ${state}">${esc(label)}</span>
             </div>
             <div class="event-body">
               <h3 class="event-title">${esc(event.title)}</h3>
               ${event.description ? `<p>${esc(event.description)}</p>` : ''}
+              
+              <!-- Đã bỏ chữ BẮT ĐẦU / KẾT THÚC, chỉ còn ngày -->
               <div class="event-time">
-                <span>BẮT ĐẦU: ${esc(dateText(event.start))}</span>
-                <span>KẾT THÚC: ${esc(dateText(event.end))}</span>
+                <span>${esc(dateText(event.start))}</span>
+                <span>${esc(dateText(event.end))}</span>
               </div>
+              
             </div>
           </article>
         `;
@@ -388,7 +440,6 @@
       regionBtn.setAttribute('aria-expanded', 'false');
       dropdown.classList.remove('open');
       
-      // Hiển thị thông báo khi chuyển server
       notify(`ĐÃ CHUYỂN SERVER: ${code}`);
       
       loadEvents();
@@ -401,10 +452,10 @@
       
       const modalImage = $('modalImage');
       modalImage.src = event.image || 'img/placeholder.svg';
-      modalImage.style.objectFit = 'cover'; // Luôn phủ kín khung, không có viền trắng
+      modalImage.style.objectFit = 'cover';
       
       $('modalTitle').textContent = event.title;
-      $('modalTag').textContent = `${currentRegion}`; // Tag Modal cũng đổi thành Server
+      $('modalTag').textContent = `${currentRegion}`;
       $('modalStart').textContent = dateText(event.start);
       $('modalEnd').textContent = dateText(event.end);
       
@@ -475,7 +526,6 @@
       btn.textContent = 'ĐANG TẢI...';
 
       try {
-        // Dùng fetch để lấy dữ liệu Blob, tránh trình duyệt mở tab mới
         const response = await fetch(url, { mode: 'cors' });
         if (!response.ok) throw new Error('Lỗi mạng');
         
