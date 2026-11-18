@@ -1,46 +1,24 @@
-/* Loader — hiển thị & đóng, idempotent (gọi nhiều lần OK) */
-window.Loader = (function () {
-  let interval = null;
-  let hidden = false;
-
-  function start() {
-    if (hidden) return;
-
-    const fill = document.getElementById('barFill');
-    const pct  = document.getElementById('barPct');
-    if (!fill || !pct) return;
-
-    document.documentElement.classList.add('loading');
-
-    let p = 0;
-    // Tăng tốc độ chạy thanh Loader: 80ms, tăng 4-8%
-    // Thanh bar sẽ đạt 90% trong khoảng 1.5s - 1.8s
-    interval = setInterval(() => {
-      p = Math.min(90, p + Math.random() * 8); 
-      fill.style.width = p + '%';
-      pct.textContent = Math.floor(p) + '%';
-    }, 80);
-  }
-
-  function hide() {
-    if (hidden) return;
-    hidden = true;
-
-    const loader = document.getElementById('loader');
-    const fill = document.getElementById('barFill');
-    const pct  = document.getElementById('barPct');
-
-    if (interval) { clearInterval(interval); interval = null; }
+/* Loader AZERST: giữ nguyên giao diện loader, chỉ điều khiển thanh tiến trình. */
+(() => {
+  'use strict';
+  const fill = document.getElementById('barFill');
+  const percent = document.getElementById('barPct');
+  const loader = document.getElementById('loader');
+  if (!loader) return;
+  let value = 0;
+  const timer = setInterval(() => {
+    value = Math.min(value + (value < 70 ? 8 : 3), 95);
+    if (fill) fill.style.width = value + '%';
+    if (percent) percent.textContent = value + '%';
+  }, 90);
+  const hide = () => {
+    clearInterval(timer);
     if (fill) fill.style.width = '100%';
-    if (pct)  pct.textContent = '100%';
-
+    if (percent) percent.textContent = '100%';
+    setTimeout(() => loader.classList.add('hide'), 180);
     document.documentElement.classList.remove('loading');
-
-    setTimeout(() => {
-      if (loader) loader.classList.add('hide');
-      setTimeout(() => { if (loader) loader.remove(); }, 900);
-    }, 300);
-  }
-
-  return { start, hide };
+  };
+  if (document.readyState === 'complete') hide();
+  else window.addEventListener('load', hide, { once: true });
+  setTimeout(hide, 5000);
 })();
