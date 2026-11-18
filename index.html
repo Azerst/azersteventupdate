@@ -98,8 +98,10 @@
 
   <!-- EVENT DETAIL MODAL -->
   <div class="modal-overlay" id="eventModal" aria-hidden="true">
+    <!-- Nút X nằm ngoài content, góc trên phải màn hình -->
+    <button class="modal-close" id="modalClose" type="button" aria-label="Đóng">×</button>
+    
     <div class="modal-content">
-      <button class="modal-close" id="modalClose" type="button" aria-label="Đóng">×</button>
       <div class="modal-thumb">
         <img id="modalImage" src="" alt="Event"
              onerror="this.onerror=null; this.src='img/placeholder.svg'; this.style.objectFit='contain';" />
@@ -108,13 +110,17 @@
         <div class="modal-tag" id="modalTag"></div>
         <h2 class="modal-title" id="modalTitle"></h2>
         <div class="modal-time">
-          <span id="modalStart"></span>
-          <span id="modalEnd"></span>
+          <div class="time-item">
+            <span class="time-label">Bắt đầu</span>
+            <span class="time-value" id="modalStart">—</span>
+          </div>
+          <div class="time-item">
+            <span class="time-label">Kết thúc</span>
+            <span class="time-value" id="modalEnd">—</span>
+          </div>
         </div>
         <div class="modal-actions">
-          <button class="btn-download" id="btnDownload" type="button">
-            <span>⬇</span> Tải xuống
-          </button>
+          <button class="btn-download" id="btnDownload" type="button">Tải xuống</button>
         </div>
       </div>
     </div>
