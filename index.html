@@ -96,6 +96,30 @@
     <p>Azerst 2026</p>
   </footer>
 
+  <!-- EVENT DETAIL MODAL -->
+  <div class="modal-overlay" id="eventModal" aria-hidden="true">
+    <div class="modal-content">
+      <button class="modal-close" id="modalClose" type="button" aria-label="Đóng">×</button>
+      <div class="modal-thumb">
+        <img id="modalImage" src="" alt="Event"
+             onerror="this.onerror=null; this.src='img/placeholder.svg'; this.style.objectFit='contain';" />
+      </div>
+      <div class="modal-body">
+        <div class="modal-tag" id="modalTag"></div>
+        <h2 class="modal-title" id="modalTitle"></h2>
+        <div class="modal-time">
+          <span id="modalStart"></span>
+          <span id="modalEnd"></span>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-download" id="btnDownload" type="button">
+            <span>⬇</span> Tải xuống
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="js/loader.js"></script>
