@@ -7,12 +7,11 @@
   const regionCurrent  = document.getElementById('regionCurrent');
   const toastEl        = document.getElementById('toast');
 
-  let currentRegion = 'vn'; // Mặc định lấy dữ liệu server VN
+  let currentRegion = 'VN';
   let currentLabel  = 'VN - Việt Nam';
   let loading = false;
   let toastTimer = null;
 
-  /* ---------- Toast ---------- */
   function showToast(msg) {
     if (!toastEl) return;
     toastEl.textContent = msg;
@@ -21,43 +20,32 @@
     toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
   }
 
-  /* ---------- Chuẩn hoá URL ảnh (sửa lỗi httpa://, bỏ khoảng trắng) ---------- */
   function normalizeImageUrl(url) {
     if (!url || typeof url !== 'string') return '';
     let clean = url.trim();
-    // Sửa lỗi chính tả phổ biến "httpa://" thành "https://"
-    if (clean.startsWith('httpa://')) {
-      clean = clean.replace('httpa://', 'https://');
-    }
-    // Chỉ chấp nhận URL bắt đầu bằng http:// hoặc https://
-    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
-      return '';
-    }
+    if (clean.startsWith('httpa://')) clean = clean.replace('httpa://', 'https://');
+    if (!clean.startsWith('http://') && !clean.startsWith('https://')) return '';
     return clean;
   }
 
-  /* ---------- Định dạng ngày tháng (ISO -> dd/mm/yyyy) ---------- */
   function formatDate(isoString) {
     if (!isoString) return '';
     try {
       const d = new Date(isoString);
       if (isNaN(d.getTime())) return '';
       return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    } catch (e) {
-      return '';
-    }
+    } catch (e) { return ''; }
   }
 
-  /* ---------- Chuyển đổi dữ liệu API sang cấu trúc UI ---------- */
   function mapApiData(rawData, regionFilter) {
     const list = rawData.data || rawData.events || [];
-    // Lọc theo server_region nếu có (API trả về tất cả, ta chỉ lấy region đang chọn)
-    const filtered = regionFilter
+    const hasRegionField = list.some(item => item.server_region);
+    
+    const filtered = (hasRegionField && regionFilter)
       ? list.filter(item => (item.server_region || '').toLowerCase() === regionFilter.toLowerCase())
       : list;
 
     return filtered.map(item => {
-      // Xử lý trạng thái
       let statusLabel = 'Đang diễn ra';
       let statusClass = 'active';
       const rawStatus = (item.status || '').toLowerCase();
@@ -67,15 +55,11 @@
         statusLabel = 'Đã kết thúc'; statusClass = 'ended';
       }
 
-      // Lấy ảnh: ưu tiên image_url, nếu không có hoặc lỗi thì dùng thumbnail_url
       let imgUrl = normalizeImageUrl(item.image_url);
-      if (!imgUrl) {
-        imgUrl = normalizeImageUrl(item.thumbnail_url);
-      }
+      if (!imgUrl) imgUrl = normalizeImageUrl(item.thumbnail_url);
 
       return {
         title: item.title || 'Sự kiện Free Fire',
-        desc: item.description || '',
         img: imgUrl,
         tag: (item.server_region || 'EVENT').toUpperCase(),
         statusLabel: statusLabel,
@@ -86,7 +70,6 @@
     });
   }
 
-  /* ---------- Load events (GỌI API THẬT) ---------- */
   async function loadEvents(region) {
     if (loading) return;
     loading = true;
@@ -95,12 +78,9 @@
     btnRefresh.disabled = true;
 
     try {
-      // Gọi API arexnetwork (không cần tham số region, sẽ lọc phía client)
       const response = await fetch('https://www.arexnetwork.vn/api/v2/events', {
         method: 'GET',
-        headers: {
-          'accept': 'application/json'
-        }
+        headers: { 'accept': 'application/json' }
       });
 
       if (!response.ok) {
@@ -108,12 +88,10 @@
       }
 
       const rawData = await response.json();
-
-      // Chuyển đổi và lọc dữ liệu theo region đang chọn
       const events = mapApiData(rawData, region);
 
       if (events.length === 0) {
-        UI.renderEmpty('KHÔNG CÓ SỰ KIỆN NÀO');
+        UI.renderEmpty(`KHÔNG CÓ SỰ KIỆN Ở SERVER ${region}`);
       } else {
         UI.renderEvents(events, region.toUpperCase());
       }
@@ -128,13 +106,10 @@
     } finally {
       loading = false;
       btnRefresh.disabled = false;
-      if (document.getElementById('loader')) {
-        Loader.hide();
-      }
+      if (document.getElementById('loader')) Loader.hide();
     }
   }
 
-  /* ---------- Dropdown ---------- */
   function openDropdown() {
     regionDropdown.classList.add('open');
     regionBtn.setAttribute('aria-expanded', 'true');
@@ -145,14 +120,10 @@
   }
 
   function selectRegion(code, label) {
-    if (code === currentRegion) {
-      closeDropdown();
-      return;
-    }
+    if (code === currentRegion) { closeDropdown(); return; }
     currentRegion = code;
     currentLabel  = label;
     regionCurrent.textContent = label;
-
     regionBtn.classList.add('has-selected');
 
     regionList.querySelectorAll('.region-item').forEach(el => {
@@ -162,7 +133,7 @@
     });
 
     closeDropdown();
-    showToast(`Đã chuyển sang Server ${code.toUpperCase()}`);
+    showToast(`Đã chuyển sang Server ${code}`);
     loadEvents(code);
   }
 
@@ -186,10 +157,8 @@
     if (e.key === 'Escape') closeDropdown();
   });
 
-  /* ---------- Refresh ---------- */
   btnRefresh.addEventListener('click', () => loadEvents(currentRegion));
 
-  /* ---------- Init ---------- */
   function init() {
     const initial = regionList.querySelector('.region-item.selected');
     if (initial) {
@@ -197,11 +166,8 @@
       currentLabel  = initial.textContent.trim();
       regionCurrent.textContent = currentLabel;
     }
-
     Loader.start();
     loadEvents(currentRegion);
-
-    // Ẩn Loader sau 4s phòng trường hợp API phản hồi chậm
     setTimeout(() => Loader.hide(), 4000);
   }
 
