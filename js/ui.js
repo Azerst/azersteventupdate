@@ -52,7 +52,6 @@ window.UI = (function () {
     setBusy(false);
     eventStore = items;
 
-    // KHÔNG render desc (đã xóa chú thích)
     wrap.innerHTML = items.map((it, idx) => {
       const timeLine = (it.start || it.end)
         ? `<div class="event-time"><span>${escapeHtml(it.start || '—')}</span><span>${escapeHtml(it.end || '—')}</span></div>`
@@ -136,7 +135,6 @@ window.UI = (function () {
         URL.revokeObjectURL(link.href);
       })
       .catch(() => {
-        // Fallback: mở ảnh trong tab mới nếu CORS chặn
         window.open(url, '_blank', 'noopener');
       });
   }
@@ -169,7 +167,7 @@ window.UI = (function () {
     }
     const closeBtn = document.getElementById('modalClose');
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
-    
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModal();
     });
