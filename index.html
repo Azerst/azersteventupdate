@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -155,40 +156,94 @@
     let selectedEvent = null;
     let toastTimer = null;
 
+    // Lấy giá trị hợp lệ đầu tiên
     const first = (...values) =>
-      values.find(v => v !== undefined && v !== null && String(v).trim() !== '');
+      values.find(v =>
+        v !== undefined &&
+        v !== null &&
+        String(v).trim() !== ''
+      );
 
+    // Chống lỗi HTML injection
     const esc = value =>
       String(value ?? '').replace(/[&<>"']/g, c => ({
-        '&':'&amp;',
-        '<':'&lt;',
-        '>':'&gt;',
-        '"':'&quot;',
-        "'":'&#39;'
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
       }[c]));
 
+    // Chuyển đối tượng lỗi thành thông báo dễ đọc
+    function errorText(error) {
+      if (!error) return 'Không rõ nguyên nhân.';
+
+      if (typeof error === 'string') {
+        return error;
+      }
+
+      if (typeof error === 'object') {
+        const message = first(
+          error.message,
+          error.error,
+          error.msg,
+          error.description,
+          error.details,
+          error.statusText
+        );
+
+        if (message) {
+          return errorText(message);
+        }
+
+        try {
+          return JSON.stringify(error);
+        } catch (_) {
+          return 'Đã xảy ra lỗi không xác định.';
+        }
+      }
+
+      return String(error);
+    }
+
+    // Đọc danh sách sự kiện từ nhiều dạng JSON
     function eventArray(data) {
       if (Array.isArray(data)) return data;
 
       const roots = [
         data,
-        data && data.data,
-        data && data.result,
-        data && data.response
+        data?.data,
+        data?.result,
+        data?.response
       ];
 
       for (const root of roots) {
         if (Array.isArray(root)) return root;
+
         if (!root || typeof root !== 'object') continue;
 
-        for (const key of ['events', 'event', 'items', 'list', 'records', 'data']) {
+        for (const key of [
+          'events',
+          'event',
+          'items',
+          'list',
+          'records',
+          'data'
+        ]) {
           const value = root[key];
 
           if (Array.isArray(value)) return value;
 
           if (value && typeof value === 'object') {
-            for (const nested of ['events', 'items', 'list', 'records']) {
-              if (Array.isArray(value[nested])) return value[nested];
+            for (const nested of [
+              'events',
+              'items',
+              'list',
+              'records'
+            ]) {
+              if (Array.isArray(value[nested])) {
+                return value[nested];
+              }
             }
           }
         }
@@ -197,6 +252,7 @@
       return [];
     }
 
+    // Chuẩn hóa dữ liệu sự kiện
     function normalize(item, index) {
       item = item && typeof item === 'object' ? item : {};
 
@@ -215,7 +271,13 @@
       );
 
       return {
-        id: first(item.id, item.event_id, item.eventId, item.key, index),
+        id: first(
+          item.id,
+          item.event_id,
+          item.eventId,
+          item.key,
+          index
+        ),
 
         title: first(
           item.title,
@@ -271,49 +333,85 @@
       };
     }
 
-    // Chuyển ngày thành DD/MM/YYYY
-    function dateText(value) {
-      if (value === null || value === undefined || value === '') {
-        return '—';
+    // Chuyển ngày thành timestamp
+    function parseDate(value) {
+      if (
+        value === null ||
+        value === undefined ||
+        value === ''
+      ) {
+        return NaN;
       }
 
-      let date;
-
-      // Xử lý timestamp dạng giây hoặc mili giây
+      // Timestamp giây hoặc mili giây
       if (
         typeof value === 'number' ||
-        (typeof value === 'string' && /^\d{10,13}$/.test(value.trim()))
+        /^\d{10,13}$/.test(String(value).trim())
       ) {
         let timestamp = Number(value);
 
-        if (timestamp < 100000000000) {
+        if (String(Math.abs(timestamp)).length === 10) {
           timestamp *= 1000;
         }
 
-        date = new Date(timestamp);
-      } else {
-        const text = String(value).trim();
-
-        // Giữ nguyên ngày dạng YYYY-MM-DD, tránh lệch ngày do múi giờ
-        const dateOnly = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-
-        if (dateOnly) {
-          return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
-        }
-
-        // Hỗ trợ ngày dạng DD/MM/YYYY
-        const vietnamDate = text.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-
-        if (vietnamDate) {
-          return `${vietnamDate[1]}/${vietnamDate[2]}/${vietnamDate[3]}`;
-        }
-
-        date = new Date(text);
+        return timestamp;
       }
 
-      if (Number.isNaN(date.getTime())) {
-        return String(value);
+      const text = String(value).trim();
+
+      // Ngày DD/MM/YYYY
+      const vietnamDate = text.match(
+        /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+      );
+
+      if (vietnamDate) {
+        return new Date(
+          Number(vietnamDate[3]),
+          Number(vietnamDate[2]) - 1,
+          Number(vietnamDate[1])
+        ).getTime();
       }
+
+      return new Date(text).getTime();
+    }
+
+    // Hiển thị ngày DD/MM/YYYY
+    function dateText(value) {
+      if (
+        value === null ||
+        value === undefined ||
+        value === ''
+      ) {
+        return '—';
+      }
+
+      const text = String(value).trim();
+
+      // Tránh lệch ngày với YYYY-MM-DD
+      const dateOnly = text.match(
+        /^(\d{4})-(\d{2})-(\d{2})$/
+      );
+
+      if (dateOnly) {
+        return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
+      }
+
+      // Giữ nguyên định dạng DD/MM/YYYY
+      const vnDate = text.match(
+        /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+      );
+
+      if (vnDate) {
+        return `${vnDate[1].padStart(2, '0')}/${vnDate[2].padStart(2, '0')}/${vnDate[3]}`;
+      }
+
+      const timestamp = parseDate(value);
+
+      if (!Number.isFinite(timestamp)) {
+        return text;
+      }
+
+      const date = new Date(timestamp);
 
       const day = String(date.getDate()).padStart(2, '0');
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -322,11 +420,12 @@
       return `${day}/${month}/${year}`;
     }
 
+    // Kiểm tra trạng thái sự kiện
     function statusOf(event) {
       const now = Date.now();
 
-      const start = event.start ? new Date(event.start).getTime() : NaN;
-      const end = event.end ? new Date(event.end).getTime() : NaN;
+      const start = parseDate(event.start);
+      const end = parseDate(event.end);
 
       if (Number.isFinite(end) && end < now) {
         return ['ended', 'Đã kết thúc'];
@@ -346,12 +445,13 @@
       return ['', 'Sự kiện'];
     }
 
+    // Thông báo
     function notify(message) {
       const toast = $('toast');
 
       if (!toast) return;
 
-      toast.textContent = message;
+      toast.textContent = errorText(message);
       toast.classList.add('show');
 
       clearTimeout(toastTimer);
@@ -361,6 +461,7 @@
       }, 2600);
     }
 
+    // Trạng thái đang tải
     function loading() {
       wrap.setAttribute('aria-busy', 'true');
 
@@ -373,52 +474,87 @@
       stat.textContent = 'Đang tải dữ liệu sự kiện…';
     }
 
+    // Hiển thị danh sách sự kiện
     function render(events) {
       currentEvents = events.map(normalize);
 
       wrap.setAttribute('aria-busy', 'false');
 
       if (!currentEvents.length) {
-        wrap.innerHTML = '<div class="empty">Hiện chưa có sự kiện cho server này.</div>';
-        stat.textContent = `0 sự kiện · Server ${currentRegion}`;
+        wrap.innerHTML = `
+          <div class="empty">
+            Hiện chưa có sự kiện cho server này.
+          </div>
+        `;
+
+        stat.textContent =
+          `0 sự kiện · Server ${currentRegion}`;
+
         return;
       }
 
-      stat.textContent = `${currentEvents.length} sự kiện · Server ${currentRegion}`;
+      stat.textContent =
+        `${currentEvents.length} sự kiện · Server ${currentRegion}`;
 
       wrap.innerHTML = currentEvents.map((event, i) => {
         const [state, label] = statusOf(event);
 
         return `
-          <article class="event-card"
-                   data-event-index="${i}"
-                   tabindex="0"
-                   role="button"
-                   aria-label="Xem ${esc(event.title)}">
+          <article
+            class="event-card"
+            data-event-index="${i}"
+            tabindex="0"
+            role="button"
+            aria-label="Xem ${esc(event.title)}"
+          >
 
             <div class="event-thumb">
-              ${event.image ? `
-                <img src="${esc(event.image)}"
-                     alt="${esc(event.title)}"
-                     loading="lazy"
-                     onerror="this.style.display='none'">
-              ` : ''}
+
+              ${
+                event.image
+                  ? `
+                    <img
+                      src="${esc(event.image)}"
+                      alt="${esc(event.title)}"
+                      loading="lazy"
+                      onerror="this.style.display='none'"
+                    >
+                  `
+                  : ''
+              }
 
               <span class="event-tag">FREE FIRE</span>
-              <span class="event-status ${state}">${label}</span>
+
+              <span class="event-status ${state}">
+                ${esc(label)}
+              </span>
+
             </div>
 
             <div class="event-body">
-              <h3 class="event-title">${esc(event.title)}</h3>
 
-              ${event.description ? `
-                <p>${esc(event.description)}</p>
-              ` : ''}
+              <h3 class="event-title">
+                ${esc(event.title)}
+              </h3>
+
+              ${
+                event.description
+                  ? `<p>${esc(event.description)}</p>`
+                  : ''
+              }
 
               <div class="event-time">
-                <span>BẮT ĐẦU: ${esc(dateText(event.start))}</span>
-                <span>KẾT THÚC: ${esc(dateText(event.end))}</span>
+
+                <span>
+                  BẮT ĐẦU: ${esc(dateText(event.start))}
+                </span>
+
+                <span>
+                  KẾT THÚC: ${esc(dateText(event.end))}
+                </span>
+
               </div>
+
             </div>
 
           </article>
@@ -426,16 +562,22 @@
       }).join('');
     }
 
+    // Tải dữ liệu sự kiện
     async function loadEvents() {
       loading();
 
-      if (refresh) refresh.disabled = true;
+      if (refresh) {
+        refresh.disabled = true;
+      }
 
       try {
         const response = await fetch(
           `${API_EVENTS}?region=${encodeURIComponent(currentRegion)}&_=${Date.now()}`,
           {
-            headers: { Accept: 'application/json' },
+            method: 'GET',
+            headers: {
+              Accept: 'application/json'
+            },
             cache: 'no-store'
           }
         );
@@ -446,24 +588,52 @@
 
         try {
           data = JSON.parse(raw);
-        } catch {
-          throw new Error('API không trả về JSON hợp lệ.');
+        } catch (_) {
+          throw new Error(
+            `API không trả về JSON hợp lệ. HTTP ${response.status}`
+          );
         }
 
-        if (!response.ok || data.success === false || data.error) {
-          throw new Error(data.error || `API lỗi HTTP ${response.status}`);
+        if (!response.ok) {
+          throw new Error(
+            `Lỗi HTTP ${response.status}: ${errorText(
+              data?.error ||
+              data?.details ||
+              data?.message ||
+              response.statusText
+            )}`
+          );
         }
 
-        render(eventArray(data));
+        if (
+          data?.success === false ||
+          data?.error
+        ) {
+          throw new Error(
+            errorText(
+              data.error ||
+              data.message ||
+              data.details
+            )
+          );
+        }
+
+        const events = eventArray(data);
+
+        render(events);
 
       } catch (error) {
         wrap.setAttribute('aria-busy', 'false');
+
+        const message = errorText(error);
+
+        console.error('AZERST API ERROR:', error);
 
         wrap.innerHTML = `
           <div class="error-box">
             Không thể tải thông tin sự kiện.
             <br>
-            <small>${esc(error.message || 'Vui lòng thử lại.')}</small>
+            <small>${esc(message)}</small>
             <br>
             <button class="btn-refresh api-retry" type="button">
               Thử lại
@@ -471,22 +641,38 @@
           </div>
         `;
 
-        stat.textContent = `Lỗi tải dữ liệu · Server ${currentRegion}`;
+        stat.textContent =
+          `Lỗi tải dữ liệu · Server ${currentRegion}`;
 
       } finally {
-        if (refresh) refresh.disabled = false;
+        if (refresh) {
+          refresh.disabled = false;
+        }
       }
     }
 
+    // Tải danh sách server từ API
     async function loadRegions() {
       try {
         const response = await fetch(API_REGIONS, {
-          headers: { Accept: 'application/json' }
+          method: 'GET',
+          headers: {
+            Accept: 'application/json'
+          },
+          cache: 'no-store'
         });
 
         const data = await response.json();
 
-        if (!response.ok || !Array.isArray(data.regions)) return;
+        if (!response.ok) {
+          throw new Error(
+            errorText(data?.error || data?.message)
+          );
+        }
+
+        if (!Array.isArray(data.regions)) {
+          return;
+        }
 
         data.regions.forEach(region => {
           const option = [
@@ -498,28 +684,39 @@
           }
         });
 
-      } catch (_) {
-        // Danh sách HTML vẫn hoạt động nếu API regions lỗi.
+      } catch (error) {
+        console.warn(
+          'Không tải được danh sách server:',
+          errorText(error)
+        );
       }
     }
 
+    // Chọn server
     function chooseRegion(code, label) {
       currentRegion = code;
+
       regionCurrent.textContent = label;
 
       regionList.querySelectorAll('.region-item').forEach(item => {
         const active = item.dataset.value === code;
 
         item.classList.toggle('selected', active);
-        item.setAttribute('aria-selected', String(active));
+
+        item.setAttribute(
+          'aria-selected',
+          String(active)
+        );
       });
 
       regionBtn.setAttribute('aria-expanded', 'false');
+
       dropdown.classList.remove('open');
 
       loadEvents();
     }
 
+    // Mở chi tiết sự kiện
     function openModal(index) {
       const event = currentEvents[index];
 
@@ -527,22 +724,32 @@
 
       selectedEvent = event;
 
-      $('modalImage').src = event.image || 'img/placeholder.svg';
-      $('modalTitle').textContent = event.title;
-      $('modalTag').textContent = `FREE FIRE · ${currentRegion}`;
+      $('modalImage').src =
+        event.image || 'img/placeholder.svg';
 
-      // Ngày bắt đầu và kết thúc: DD/MM/YYYY
-      $('modalStart').textContent = dateText(event.start);
-      $('modalEnd').textContent = dateText(event.end);
+      $('modalTitle').textContent =
+        event.title;
+
+      $('modalTag').textContent =
+        `FREE FIRE · ${currentRegion}`;
+
+      $('modalStart').textContent =
+        dateText(event.start);
+
+      $('modalEnd').textContent =
+        dateText(event.end);
 
       modal.classList.add('show');
+
       modal.setAttribute('aria-hidden', 'false');
 
       document.body.classList.add('modal-open');
     }
 
+    // Đóng chi tiết sự kiện
     function closeModal() {
       modal.classList.remove('show');
+
       modal.setAttribute('aria-hidden', 'true');
 
       document.body.classList.remove('modal-open');
@@ -557,7 +764,10 @@
 
       dropdown.classList.toggle('open', open);
 
-      regionBtn.setAttribute('aria-expanded', String(open));
+      regionBtn.setAttribute(
+        'aria-expanded',
+        String(open)
+      );
     });
 
     // Chọn server
@@ -566,21 +776,29 @@
 
       if (!item) return;
 
-      chooseRegion(item.dataset.value, item.textContent.trim());
+      chooseRegion(
+        item.dataset.value,
+        item.textContent.trim()
+      );
     });
 
     // Đóng dropdown khi bấm bên ngoài
     document.addEventListener('click', event => {
       if (!dropdown.contains(event.target)) {
         dropdown.classList.remove('open');
-        regionBtn.setAttribute('aria-expanded', 'false');
+
+        regionBtn.setAttribute(
+          'aria-expanded',
+          'false'
+        );
       }
     });
 
-    // Mở chi tiết sự kiện
+    // Mở chi tiết hoặc thử tải lại
     wrap.addEventListener('click', event => {
       if (event.target.closest('.api-retry')) {
-        return loadEvents();
+        loadEvents();
+        return;
       }
 
       const card = event.target.closest('[data-event-index]');
@@ -621,10 +839,13 @@
     $('btnDownload').addEventListener('click', () => {
       if (!selectedEvent) return;
 
-      const url = selectedEvent.image || selectedEvent.url;
+      const url =
+        selectedEvent.image ||
+        selectedEvent.url;
 
       if (!url) {
-        return notify('Sự kiện này chưa có tệp tải xuống.');
+        notify('Sự kiện này chưa có tệp tải xuống.');
+        return;
       }
 
       const link = document.createElement('a');
@@ -633,11 +854,14 @@
       link.target = '_blank';
       link.rel = 'noopener';
 
-      link.download = `${String(selectedEvent.title)
-        .replace(/[^\p{L}\p{N}-]+/gu, '-')}.jpg`;
+      link.download =
+        `${String(selectedEvent.title)
+          .replace(/[^\p{L}\p{N}-]+/gu, '-')}.jpg`;
 
       document.body.appendChild(link);
+
       link.click();
+
       link.remove();
     });
 
