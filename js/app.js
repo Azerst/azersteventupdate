@@ -12,6 +12,7 @@
   let loading = false;
   let toastTimer = null;
 
+  /* ---------- Toast ---------- */
   function showToast(msg) {
     if (!toastEl) return;
     toastEl.textContent = msg;
@@ -20,6 +21,7 @@
     toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
   }
 
+  /* ---------- Chuẩn hoá URL ảnh ---------- */
   function normalizeImageUrl(url) {
     if (!url || typeof url !== 'string') return '';
     let clean = url.trim();
@@ -28,6 +30,7 @@
     return clean;
   }
 
+  /* ---------- Định dạng ngày ---------- */
   function formatDate(isoString) {
     if (!isoString) return '';
     try {
@@ -37,10 +40,11 @@
     } catch (e) { return ''; }
   }
 
+  /* ---------- Chuyển đổi dữ liệu API ---------- */
   function mapApiData(rawData, regionFilter) {
     const list = rawData.data || rawData.events || [];
     const hasRegionField = list.some(item => item.server_region);
-    
+
     const filtered = (hasRegionField && regionFilter)
       ? list.filter(item => (item.server_region || '').toLowerCase() === regionFilter.toLowerCase())
       : list;
@@ -70,6 +74,7 @@
     });
   }
 
+  /* ---------- Load events ---------- */
   async function loadEvents(region) {
     if (loading) return;
     loading = true;
@@ -110,6 +115,7 @@
     }
   }
 
+  /* ---------- Dropdown ---------- */
   function openDropdown() {
     regionDropdown.classList.add('open');
     regionBtn.setAttribute('aria-expanded', 'true');
@@ -159,6 +165,7 @@
 
   btnRefresh.addEventListener('click', () => loadEvents(currentRegion));
 
+  /* ---------- Init ---------- */
   function init() {
     const initial = regionList.querySelector('.region-item.selected');
     if (initial) {
