@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -103,8 +102,9 @@
 
     <div class="modal-content">
       <div class="modal-thumb">
+        <!-- Đã xóa thuộc tính chuyển sang object-fit: contain khi lỗi để tránh viền trắng -->
         <img id="modalImage" src="" alt="Event"
-             onerror="this.onerror=null; this.src='img/placeholder.svg'; this.style.objectFit='contain';" />
+             onerror="this.onerror=null; this.src='img/placeholder.svg';" />
       </div>
       <div class="modal-body">
         <div class="modal-tag" id="modalTag"></div>
@@ -132,7 +132,7 @@
   <script src="js/ui.js"></script>
   <script src="js/app.js"></script>
 
-  <!-- API LINK -->
+  <!-- API LINK & LOGIC -->
   <script>
   (() => {
     'use strict';
@@ -156,7 +156,6 @@
     let selectedEvent = null;
     let toastTimer = null;
 
-    // Lấy giá trị hợp lệ đầu tiên
     const first = (...values) =>
       values.find(v =>
         v !== undefined &&
@@ -164,7 +163,6 @@
         String(v).trim() !== ''
       );
 
-    // Chống lỗi HTML injection
     const esc = value =>
       String(value ?? '').replace(/[&<>"']/g, c => ({
         '&': '&amp;',
@@ -174,695 +172,347 @@
         "'": '&#39;'
       }[c]));
 
-    // Chuyển đối tượng lỗi thành thông báo dễ đọc
     function errorText(error) {
       if (!error) return 'Không rõ nguyên nhân.';
-
-      if (typeof error === 'string') {
-        return error;
-      }
-
+      if (typeof error === 'string') return error;
       if (typeof error === 'object') {
-        const message = first(
-          error.message,
-          error.error,
-          error.msg,
-          error.description,
-          error.details,
-          error.statusText
-        );
-
-        if (message) {
-          return errorText(message);
-        }
-
-        try {
-          return JSON.stringify(error);
-        } catch (_) {
-          return 'Đã xảy ra lỗi không xác định.';
-        }
+        const message = first(error.message, error.error, error.msg, error.description, error.details, error.statusText);
+        if (message) return errorText(message);
+        try { return JSON.stringify(error); } catch (_) { return 'Đã xảy ra lỗi không xác định.'; }
       }
-
       return String(error);
     }
 
-    // Đọc danh sách sự kiện từ nhiều dạng JSON
+    // Tự động nhận diện và chuyển đổi đầu tên sự kiện
+    function convertEventTitle(title) {
+      if (!title) return title;
+      const t = String(title).trim();
+      
+      if (/^TW/i.test(t)) return t.replace(/^TW/i, 'VQTO');
+      if (/^FW/i.test(t)) return t.replace(/^FW/i, 'VQBM');
+      if (/^DW/i.test(t)) return t.replace(/^DW/i, 'VQKB');
+      if (/^Moco/i.test(t)) return t; // Giữ nguyên
+      
+      return t;
+    }
+
     function eventArray(data) {
       if (Array.isArray(data)) return data;
-
-      const roots = [
-        data,
-        data?.data,
-        data?.result,
-        data?.response
-      ];
-
+      const roots = [data, data?.data, data?.result, data?.response];
       for (const root of roots) {
         if (Array.isArray(root)) return root;
-
         if (!root || typeof root !== 'object') continue;
-
-        for (const key of [
-          'events',
-          'event',
-          'items',
-          'list',
-          'records',
-          'data'
-        ]) {
+        for (const key of ['events', 'event', 'items', 'list', 'records', 'data']) {
           const value = root[key];
-
           if (Array.isArray(value)) return value;
-
           if (value && typeof value === 'object') {
-            for (const nested of [
-              'events',
-              'items',
-              'list',
-              'records'
-            ]) {
-              if (Array.isArray(value[nested])) {
-                return value[nested];
-              }
+            for (const nested of ['events', 'items', 'list', 'records']) {
+              if (Array.isArray(value[nested])) return value[nested];
             }
           }
         }
       }
-
       return [];
     }
 
-    // Chuẩn hóa dữ liệu sự kiện
     function normalize(item, index) {
       item = item && typeof item === 'object' ? item : {};
-
-      const image = first(
-        item.image,
-        item.img,
-        item.banner,
-        item.thumbnail,
-        item.icon,
-        item.image_url,
-        item.imageUrl,
-        item.cover,
-        item.poster,
-        item.banner_url,
-        ''
-      );
+      const image = first(item.image, item.img, item.banner, item.thumbnail, item.icon, item.image_url, item.imageUrl, item.cover, item.poster, item.banner_url, '');
+      
+      const rawTitle = first(item.title, item.name, item.event_name, item.eventName, item.nama, item.topic, 'Sự kiện Free Fire');
+      const convertedTitle = convertEventTitle(rawTitle);
 
       return {
-        id: first(
-          item.id,
-          item.event_id,
-          item.eventId,
-          item.key,
-          index
-        ),
-
-        title: first(
-          item.title,
-          item.name,
-          item.event_name,
-          item.eventName,
-          item.nama,
-          item.topic,
-          'Sự kiện Free Fire'
-        ),
-
-        description: first(
-          item.description,
-          item.desc,
-          item.content,
-          item.detail,
-          item.subtitle,
-          ''
-        ),
-
+        id: first(item.id, item.event_id, item.eventId, item.key, index),
+        title: convertedTitle,
+        description: first(item.description, item.desc, item.content, item.detail, item.subtitle, ''),
         image,
-
-        start: first(
-          item.start,
-          item.start_time,
-          item.startTime,
-          item.begin,
-          item.from,
-          item.date_start,
-          item.startDate,
-          ''
-        ),
-
-        end: first(
-          item.end,
-          item.end_time,
-          item.endTime,
-          item.finish,
-          item.to,
-          item.date_end,
-          item.endDate,
-          ''
-        ),
-
-        url: first(
-          item.download,
-          item.download_url,
-          item.url,
-          item.link,
-          image,
-          ''
-        )
+        start: first(item.start, item.start_time, item.startTime, item.begin, item.from, item.date_start, item.startDate, ''),
+        end: first(item.end, item.end_time, item.endTime, item.finish, item.to, item.date_end, item.endDate, ''),
+        url: first(item.download, item.download_url, item.url, item.link, image, '')
       };
     }
 
-    // Chuyển ngày thành timestamp
     function parseDate(value) {
-      if (
-        value === null ||
-        value === undefined ||
-        value === ''
-      ) {
-        return NaN;
-      }
-
-      // Timestamp giây hoặc mili giây
-      if (
-        typeof value === 'number' ||
-        /^\d{10,13}$/.test(String(value).trim())
-      ) {
+      if (value === null || value === undefined || value === '') return NaN;
+      if (typeof value === 'number' || /^\d{10,13}$/.test(String(value).trim())) {
         let timestamp = Number(value);
-
-        if (String(Math.abs(timestamp)).length === 10) {
-          timestamp *= 1000;
-        }
-
+        if (String(Math.abs(timestamp)).length === 10) timestamp *= 1000;
         return timestamp;
       }
-
       const text = String(value).trim();
-
-      // Ngày DD/MM/YYYY
-      const vietnamDate = text.match(
-        /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
-      );
-
+      const vietnamDate = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
       if (vietnamDate) {
-        return new Date(
-          Number(vietnamDate[3]),
-          Number(vietnamDate[2]) - 1,
-          Number(vietnamDate[1])
-        ).getTime();
+        return new Date(Number(vietnamDate[3]), Number(vietnamDate[2]) - 1, Number(vietnamDate[1])).getTime();
       }
-
       return new Date(text).getTime();
     }
 
-    // Hiển thị ngày DD/MM/YYYY
     function dateText(value) {
-      if (
-        value === null ||
-        value === undefined ||
-        value === ''
-      ) {
-        return '—';
-      }
-
+      if (value === null || value === undefined || value === '') return '—';
       const text = String(value).trim();
-
-      // Tránh lệch ngày với YYYY-MM-DD
-      const dateOnly = text.match(
-        /^(\d{4})-(\d{2})-(\d{2})$/
-      );
-
-      if (dateOnly) {
-        return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
-      }
-
-      // Giữ nguyên định dạng DD/MM/YYYY
-      const vnDate = text.match(
-        /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
-      );
-
-      if (vnDate) {
-        return `${vnDate[1].padStart(2, '0')}/${vnDate[2].padStart(2, '0')}/${vnDate[3]}`;
-      }
-
+      const dateOnly = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (dateOnly) return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
+      const vnDate = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (vnDate) return `${vnDate[1].padStart(2, '0')}/${vnDate[2].padStart(2, '0')}/${vnDate[3]}`;
       const timestamp = parseDate(value);
-
-      if (!Number.isFinite(timestamp)) {
-        return text;
-      }
-
+      if (!Number.isFinite(timestamp)) return text;
       const date = new Date(timestamp);
-
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-
-      return `${day}/${month}/${year}`;
+      return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
     }
 
-    // Kiểm tra trạng thái sự kiện
     function statusOf(event) {
       const now = Date.now();
-
       const start = parseDate(event.start);
       const end = parseDate(event.end);
-
-      if (Number.isFinite(end) && end < now) {
-        return ['ended', 'Đã kết thúc'];
-      }
-
-      if (Number.isFinite(start) && start > now) {
-        return ['upcoming', 'Sắp diễn ra'];
-      }
-
-      if (
-        (Number.isFinite(start) && start <= now) ||
-        (Number.isFinite(end) && end >= now)
-      ) {
-        return ['active', 'Đang diễn ra'];
-      }
-
+      if (Number.isFinite(end) && end < now) return ['ended', 'Đã kết thúc'];
+      if (Number.isFinite(start) && start > now) return ['upcoming', 'Sắp diễn ra'];
+      if ((Number.isFinite(start) && start <= now) || (Number.isFinite(end) && end >= now)) return ['active', 'Đang diễn ra'];
       return ['', 'Sự kiện'];
     }
 
-    // Thông báo
     function notify(message) {
       const toast = $('toast');
-
       if (!toast) return;
-
       toast.textContent = errorText(message);
       toast.classList.add('show');
-
       clearTimeout(toastTimer);
-
-      toastTimer = setTimeout(() => {
-        toast.classList.remove('show');
-      }, 2600);
+      toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 2600);
     }
 
-    // Trạng thái đang tải
     function loading() {
       wrap.setAttribute('aria-busy', 'true');
-
-      wrap.innerHTML = `
-        <div class="skeleton"></div>
-        <div class="skeleton"></div>
-        <div class="skeleton"></div>
-      `;
-
+      wrap.innerHTML = `<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>`;
       stat.textContent = 'Đang tải dữ liệu sự kiện…';
     }
 
-    // Hiển thị danh sách sự kiện
     function render(events) {
       currentEvents = events.map(normalize);
-
       wrap.setAttribute('aria-busy', 'false');
 
       if (!currentEvents.length) {
-        wrap.innerHTML = `
-          <div class="empty">
-            Hiện chưa có sự kiện cho server này.
-          </div>
-        `;
-
-        stat.textContent =
-          `0 sự kiện · Server ${currentRegion}`;
-
+        wrap.innerHTML = `<div class="empty">Hiện chưa có sự kiện cho server này.</div>`;
+        stat.textContent = `0 sự kiện · Server ${currentRegion}`;
         return;
       }
 
-      stat.textContent =
-        `${currentEvents.length} sự kiện · Server ${currentRegion}`;
+      stat.textContent = `${currentEvents.length} sự kiện · Server ${currentRegion}`;
 
       wrap.innerHTML = currentEvents.map((event, i) => {
         const [state, label] = statusOf(event);
 
         return `
-          <article
-            class="event-card"
-            data-event-index="${i}"
-            tabindex="0"
-            role="button"
-            aria-label="Xem ${esc(event.title)}"
-          >
-
+          <article class="event-card" data-event-index="${i}" tabindex="0" role="button" aria-label="Xem ${esc(event.title)}">
             <div class="event-thumb">
-
-              ${
-                event.image
-                  ? `
-                    <img
-                      src="${esc(event.image)}"
-                      alt="${esc(event.title)}"
-                      loading="lazy"
-                      onerror="this.style.display='none'"
-                    >
-                  `
-                  : ''
-              }
-
-              <span class="event-tag">FREE FIRE</span>
-
-              <span class="event-status ${state}">
-                ${esc(label)}
-              </span>
-
+              ${event.image ? `<img src="${esc(event.image)}" alt="${esc(event.title)}" loading="lazy" onerror="this.style.display='none'">` : ''}
+              
+              <!-- Nhãn hiển thị tên Server thay vì FREE FIRE -->
+              <span class="event-tag">${esc(currentRegion)}</span>
+              
+              <span class="event-status ${state}">${esc(label)}</span>
             </div>
-
             <div class="event-body">
-
-              <h3 class="event-title">
-                ${esc(event.title)}
-              </h3>
-
-              ${
-                event.description
-                  ? `<p>${esc(event.description)}</p>`
-                  : ''
-              }
-
+              <h3 class="event-title">${esc(event.title)}</h3>
+              ${event.description ? `<p>${esc(event.description)}</p>` : ''}
               <div class="event-time">
-
-                <span>
-                  BẮT ĐẦU: ${esc(dateText(event.start))}
-                </span>
-
-                <span>
-                  KẾT THÚC: ${esc(dateText(event.end))}
-                </span>
-
+                <span>BẮT ĐẦU: ${esc(dateText(event.start))}</span>
+                <span>KẾT THÚC: ${esc(dateText(event.end))}</span>
               </div>
-
             </div>
-
           </article>
         `;
       }).join('');
     }
 
-    // Tải dữ liệu sự kiện
     async function loadEvents() {
       loading();
-
-      if (refresh) {
-        refresh.disabled = true;
-      }
+      if (refresh) refresh.disabled = true;
 
       try {
-        const response = await fetch(
-          `${API_EVENTS}?region=${encodeURIComponent(currentRegion)}&_=${Date.now()}`,
-          {
-            method: 'GET',
-            headers: {
-              Accept: 'application/json'
-            },
-            cache: 'no-store'
-          }
-        );
-
-        const raw = await response.text();
-
-        let data;
-
-        try {
-          data = JSON.parse(raw);
-        } catch (_) {
-          throw new Error(
-            `API không trả về JSON hợp lệ. HTTP ${response.status}`
-          );
-        }
-
-        if (!response.ok) {
-          throw new Error(
-            `Lỗi HTTP ${response.status}: ${errorText(
-              data?.error ||
-              data?.details ||
-              data?.message ||
-              response.statusText
-            )}`
-          );
-        }
-
-        if (
-          data?.success === false ||
-          data?.error
-        ) {
-          throw new Error(
-            errorText(
-              data.error ||
-              data.message ||
-              data.details
-            )
-          );
-        }
-
-        const events = eventArray(data);
-
-        render(events);
-
-      } catch (error) {
-        wrap.setAttribute('aria-busy', 'false');
-
-        const message = errorText(error);
-
-        console.error('AZERST API ERROR:', error);
-
-        wrap.innerHTML = `
-          <div class="error-box">
-            Không thể tải thông tin sự kiện.
-            <br>
-            <small>${esc(message)}</small>
-            <br>
-            <button class="btn-refresh api-retry" type="button">
-              Thử lại
-            </button>
-          </div>
-        `;
-
-        stat.textContent =
-          `Lỗi tải dữ liệu · Server ${currentRegion}`;
-
-      } finally {
-        if (refresh) {
-          refresh.disabled = false;
-        }
-      }
-    }
-
-    // Tải danh sách server từ API
-    async function loadRegions() {
-      try {
-        const response = await fetch(API_REGIONS, {
+        const response = await fetch(`${API_EVENTS}?region=${encodeURIComponent(currentRegion)}&_=${Date.now()}`, {
           method: 'GET',
-          headers: {
-            Accept: 'application/json'
-          },
+          headers: { Accept: 'application/json' },
           cache: 'no-store'
         });
 
-        const data = await response.json();
+        const raw = await response.text();
+        let data;
+        try { data = JSON.parse(raw); } catch (_) { throw new Error(`API không trả về JSON hợp lệ. HTTP ${response.status}`); }
 
-        if (!response.ok) {
-          throw new Error(
-            errorText(data?.error || data?.message)
-          );
-        }
+        if (!response.ok) throw new Error(`Lỗi HTTP ${response.status}: ${errorText(data?.error || data?.details || data?.message || response.statusText)}`);
+        if (data?.success === false || data?.error) throw new Error(errorText(data.error || data.message || data.details));
 
-        if (!Array.isArray(data.regions)) {
-          return;
-        }
-
-        data.regions.forEach(region => {
-          const option = [
-            ...regionList.querySelectorAll('.region-item')
-          ].find(el => el.dataset.value === region.code);
-
-          if (option && region.name) {
-            option.dataset.apiName = region.name;
-          }
-        });
+        render(eventArray(data));
 
       } catch (error) {
-        console.warn(
-          'Không tải được danh sách server:',
-          errorText(error)
-        );
+        wrap.setAttribute('aria-busy', 'false');
+        const message = errorText(error);
+        console.error('AZERST API ERROR:', error);
+        wrap.innerHTML = `
+          <div class="error-box">
+            Không thể tải thông tin sự kiện.<br>
+            <small>${esc(message)}</small><br>
+            <button class="btn-refresh api-retry" type="button">Thử lại</button>
+          </div>
+        `;
+        stat.textContent = `Lỗi tải dữ liệu · Server ${currentRegion}`;
+      } finally {
+        if (refresh) refresh.disabled = false;
       }
     }
 
-    // Chọn server
+    async function loadRegions() {
+      try {
+        const response = await fetch(API_REGIONS, { method: 'GET', headers: { Accept: 'application/json' }, cache: 'no-store' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(errorText(data?.error || data?.message));
+        if (!Array.isArray(data.regions)) return;
+
+        data.regions.forEach(region => {
+          const option = [...regionList.querySelectorAll('.region-item')].find(el => el.dataset.value === region.code);
+          if (option && region.name) option.dataset.apiName = region.name;
+        });
+      } catch (error) {
+        console.warn('Không tải được danh sách server:', errorText(error));
+      }
+    }
+
     function chooseRegion(code, label) {
       currentRegion = code;
-
       regionCurrent.textContent = label;
-
       regionList.querySelectorAll('.region-item').forEach(item => {
         const active = item.dataset.value === code;
-
         item.classList.toggle('selected', active);
-
-        item.setAttribute(
-          'aria-selected',
-          String(active)
-        );
+        item.setAttribute('aria-selected', String(active));
       });
-
       regionBtn.setAttribute('aria-expanded', 'false');
-
       dropdown.classList.remove('open');
-
+      
+      // Hiển thị thông báo khi chuyển server
+      notify(`ĐÃ CHUYỂN SERVER: ${code}`);
+      
       loadEvents();
     }
 
-    // Mở chi tiết sự kiện
     function openModal(index) {
       const event = currentEvents[index];
-
       if (!event) return;
-
       selectedEvent = event;
-
-      $('modalImage').src =
-        event.image || 'img/placeholder.svg';
-
-      $('modalTitle').textContent =
-        event.title;
-
-      $('modalTag').textContent =
-        `FREE FIRE · ${currentRegion}`;
-
-      $('modalStart').textContent =
-        dateText(event.start);
-
-      $('modalEnd').textContent =
-        dateText(event.end);
-
+      
+      const modalImage = $('modalImage');
+      modalImage.src = event.image || 'img/placeholder.svg';
+      modalImage.style.objectFit = 'cover'; // Luôn phủ kín khung, không có viền trắng
+      
+      $('modalTitle').textContent = event.title;
+      $('modalTag').textContent = `${currentRegion}`; // Tag Modal cũng đổi thành Server
+      $('modalStart').textContent = dateText(event.start);
+      $('modalEnd').textContent = dateText(event.end);
+      
       modal.classList.add('show');
-
       modal.setAttribute('aria-hidden', 'false');
-
       document.body.classList.add('modal-open');
     }
 
-    // Đóng chi tiết sự kiện
     function closeModal() {
       modal.classList.remove('show');
-
       modal.setAttribute('aria-hidden', 'true');
-
       document.body.classList.remove('modal-open');
     }
 
-    // Tải lại dữ liệu
     refresh.addEventListener('click', loadEvents);
 
-    // Mở dropdown server
     regionBtn.addEventListener('click', () => {
       const open = !dropdown.classList.contains('open');
-
       dropdown.classList.toggle('open', open);
-
-      regionBtn.setAttribute(
-        'aria-expanded',
-        String(open)
-      );
+      regionBtn.setAttribute('aria-expanded', String(open));
     });
 
-    // Chọn server
     regionList.addEventListener('click', event => {
       const item = event.target.closest('.region-item');
-
       if (!item) return;
-
-      chooseRegion(
-        item.dataset.value,
-        item.textContent.trim()
-      );
+      chooseRegion(item.dataset.value, item.textContent.trim());
     });
 
-    // Đóng dropdown khi bấm bên ngoài
     document.addEventListener('click', event => {
       if (!dropdown.contains(event.target)) {
         dropdown.classList.remove('open');
-
-        regionBtn.setAttribute(
-          'aria-expanded',
-          'false'
-        );
+        regionBtn.setAttribute('aria-expanded', 'false');
       }
     });
 
-    // Mở chi tiết hoặc thử tải lại
     wrap.addEventListener('click', event => {
-      if (event.target.closest('.api-retry')) {
-        loadEvents();
-        return;
-      }
-
+      if (event.target.closest('.api-retry')) { loadEvents(); return; }
       const card = event.target.closest('[data-event-index]');
-
-      if (card) {
-        openModal(Number(card.dataset.eventIndex));
-      }
+      if (card) openModal(Number(card.dataset.eventIndex));
     });
 
-    // Hỗ trợ bàn phím
     wrap.addEventListener('keydown', event => {
-      if (
-        (event.key === 'Enter' || event.key === ' ') &&
-        event.target.matches('[data-event-index]')
-      ) {
+      if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('[data-event-index]')) {
         event.preventDefault();
-
         openModal(Number(event.target.dataset.eventIndex));
       }
     });
 
-    // Đóng modal
     $('modalClose').addEventListener('click', closeModal);
+    modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
 
-    modal.addEventListener('click', event => {
-      if (event.target === modal) {
-        closeModal();
-      }
-    });
-
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') {
-        closeModal();
-      }
-    });
-
-    // Tải ảnh sự kiện
-    $('btnDownload').addEventListener('click', () => {
+    // Logic Tải Xuống hoàn chỉnh (Ép tải file & hiện trạng thái)
+    $('btnDownload').addEventListener('click', async () => {
       if (!selectedEvent) return;
 
-      const url =
-        selectedEvent.image ||
-        selectedEvent.url;
-
+      const url = selectedEvent.image || selectedEvent.url;
       if (!url) {
         notify('Sự kiện này chưa có tệp tải xuống.');
         return;
       }
 
-      const link = document.createElement('a');
+      const btn = $('btnDownload');
+      if (btn.disabled) return;
 
-      link.href = url;
-      link.target = '_blank';
-      link.rel = 'noopener';
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'ĐANG TẢI...';
 
-      link.download =
-        `${String(selectedEvent.title)
-          .replace(/[^\p{L}\p{N}-]+/gu, '-')}.jpg`;
+      try {
+        // Dùng fetch để lấy dữ liệu Blob, tránh trình duyệt mở tab mới
+        const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) throw new Error('Lỗi mạng');
+        
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        
+        let ext = 'jpg';
+        const urlParts = url.split('?')[0].split('.');
+        if (urlParts.length > 1) {
+          const checkExt = urlParts.pop().toLowerCase();
+          if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(checkExt)) ext = checkExt;
+        }
+        
+        const safeTitle = String(selectedEvent.title).replace(/[^\p{L}\p{N}-]+/gu, '-').trim();
+        link.download = `${safeTitle || 'event'}.${ext}`;
+        
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        
+        window.URL.revokeObjectURL(blobUrl);
 
-      document.body.appendChild(link);
+        btn.textContent = 'TẢI THÀNH CÔNG';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }, 2000);
 
-      link.click();
-
-      link.remove();
+      } catch (error) {
+        console.error('Download error:', error);
+        notify('Không thể tải xuống. Vui lòng thử lại.');
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
     });
 
     // Khởi chạy
